@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import entities.AppendEntryPar;
 import entities.AppendEntryRes;
+import entities.Entry;
 import entities.Log;
 import entities.RequestVotePar;
 import entities.RequestVoteRes;
@@ -65,6 +66,15 @@ public class Node implements NodeInterf {
 		votedFor = vf;
 	}
 	
+	public int getCommitIndex() {
+		return commitIndex;
+	}
+	
+	public void setCommitIndex(int ci) {
+		commitIndex = ci;
+	}
+	
+	/* log opeator */
 	public int lastLogIndex() {
 		return log.getLastLogIndex();
 	}
@@ -81,8 +91,12 @@ public class Node implements NodeInterf {
 		return log.getCommand(index);
 	}
 	
-	public int getCommitIndex() {
-		return commitIndex;
+	public void logDeleteFrom(int index) {
+		log.deleteFrom(index);
+	}
+	
+	public void addEntry(Entry entry) {
+		log.append(entry);
 	}
 	
 	@Override

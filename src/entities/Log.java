@@ -10,7 +10,7 @@ import java.util.Map;
 
 // store the log as a hashmap, each index to an entry
 public class Log {
-	private int index = 1;
+	private int index = 0;
 	private Map<Integer,Entry> log;
 	
 	public Log() {
@@ -48,5 +48,14 @@ public class Log {
 	public String getCommand(int i ) {
 		if(log.get(i)==null) return "Null";
 		return log.get(i).getCommand();
+	}
+	
+	// delete entries starting from index
+	public void deleteFrom(int index) {
+		this.index = index - 1;
+		int length = log.size();
+		for(int x=index;x<=length;x++) {
+			log.remove(x);
+		}
 	}
 }

@@ -2,6 +2,7 @@ package implement;
 
 import entities.AppendEntryPar;
 import entities.AppendEntryRes;
+import entities.Entry;
 import entities.RequestVotePar;
 import entities.RequestVoteRes;
 import entities.Status;
@@ -62,22 +63,44 @@ public class Consensus implements ConsensusInterf {
 		int leaderTerm = param.getTerm();
 		int prevLogIndex = param.getPreLogIndex();
 		int prevLogTerm = param.getPreLogTerm();
-		String entries = param.getEntry();
+		Entry entries = param.getEntry();
+		int leaderCommit = param.getLeaderCommit();
 		
 		int currentTerm = node.getCurrentTerm();
 		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if(leaderTerm<currentTerm) return new AppendEntryRes(currentTerm,false);
 		
+		// if term > currentTerm, set the follower status 
+		if(leaderTerm>=currentTerm) {
+			node.setStatus(Status.FOLLOWER);
+			node.setCurrentTerm(leaderTerm);
+		}
+		
+		// receive a heartbeat
+		if(entries.getCommand() == null || entries.getCommand().equals("")) return new AppendEntryRes(currentTerm,true);
+		
 		// Reply false if log doesn¡¯t contain an entry at prevLogIndex whose term matches prevLogTerm
 		if(node.logEntryTerm(prevLogIndex)!=prevLogTerm) return new AppendEntryRes(currentTerm,false);
 		
 		/** If an existing entry conflicts with a new one (same index
 		  * but different terms), delete the existing entry and all that
-		  * follow it (¡ì5.3)
+          * follow it (¡ì5.3)
           */
+		if(node.logEntryTerm(prevLogIndex+1) != -1
+				&& node.logEntryTerm(prevLogIndex+1) != param.getEntry().getEntryTerm()) {
+			node.logDeleteFrom(prevLogIndex+1);
+		}
 		
-		return null;
+		// Append any new entries not already in the log
+		node.addEntry(entries);
+		
+		if(leaderCommit > node.getCommitIndex()) {
+			int i = (int) Math.min(leaderCommit, node.lastLogIndex());
+			node.setCommitIndex(i);
+		}
+		
+		return new AppendEntryRes(currentTerm,true);
 	}
 
 }
