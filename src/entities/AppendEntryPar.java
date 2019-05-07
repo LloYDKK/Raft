@@ -10,11 +10,23 @@ public class AppendEntryPar {
 	private String leaderId; // leader's ID
 	private int preLogIndex; // index of log entry immediately preceding new ones
 	private int preLogTerm; // term of prevLogIndex entry
-	private Log[] entries; // log entries(empty for heartbeat)
+	private String entries; // log entries(empty for heartbeat)
 	private int leaderCommit; //leader's commitIndex
 	
 	public int getTerm() {
 		return term;
+	}
+	
+	public int getPreLogIndex() {
+		return preLogIndex;
+	}
+	
+	public int getPreLogTerm() {
+		return preLogTerm;
+	}
+	
+	public String getEntry() {
+		return entries;
 	}
 	
 	private AppendEntryPar(Builder builder) {
@@ -31,7 +43,7 @@ public class AppendEntryPar {
 		private String leaderId;
 		private int preLogIndex;
 		private int preLogTerm;
-		private Log[] entries;
+		private String entries;
 		private int leaderCommit;
 		
 		public Builder term(int t) {
@@ -54,7 +66,7 @@ public class AppendEntryPar {
 			return this;
 		}
 		
-		public Builder entries(Log[] t) {
+		public Builder entries(String t) {
 			entries = t;
 			return this;
 		}

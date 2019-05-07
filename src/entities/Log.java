@@ -8,21 +8,19 @@ import java.util.Map;
   * 2019-05-04
   */
 
+// store the log as a hashmap, each index to an entry
 public class Log {
 	private int index = 1;
-	private Map<Integer,Integer> termEntries;
-	private Map<Integer,String> commandEntries;
+	private Map<Integer,Entry> log;
 	
 	public Log() {
-		termEntries = new HashMap<Integer,Integer>();
-		commandEntries = new HashMap<Integer,String>();
+		log = new HashMap<Integer,Entry>();
 	}
 	
 	// append a new entry containing term and command
-	public void append(int term,String command) {
+	public void append(Entry entry) {
 		index += 1;
-		termEntries.put(index,term);
-		commandEntries.put(index, command);
+		log.put(index,entry);
 	}
 	
 	// get the last index in the log
@@ -32,22 +30,23 @@ public class Log {
 	
 	// get the term of the last entry in the log
 	public int getLastLogTerm() {
-		return termEntries.get(index);
+		return log.get(index).getEntryTerm();
 	}
 	
 	// get the last command
 	public String getLastCommand() {
-		return commandEntries.get(index);
+		return log.get(index).getCommand();
 	}
 	
 	// get term of the entry given the index
 	public int getEntryTerm(int i) {
-		return termEntries.get(i);
+		if(log.get(i)==null) return -1;
+		return log.get(i).getEntryTerm();
 	}
 	
 	// get the commadn give the index
 	public String getCommand(int i ) {
-		return commandEntries.get(i);
+		if(log.get(i)==null) return "Null";
+		return log.get(i).getCommand();
 	}
-	
 }

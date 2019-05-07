@@ -73,11 +73,11 @@ public class Node implements NodeInterf {
 		return log.getLastLogTerm();
 	}
 	
-	public int EntryTerm(int index) {
+	public int logEntryTerm(int index) {
 		return log.getEntryTerm(index);
 	}
 	
-	public String EntryCommand(int index) {
+	public String logEntryCommand(int index) {
 		return log.getCommand(index);
 	}
 	

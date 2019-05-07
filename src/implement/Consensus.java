@@ -57,11 +57,25 @@ public class Consensus implements ConsensusInterf {
 	@Override
 	public AppendEntryRes appendEntries(AppendEntryPar param) {
 		// TODO Auto-generated method stub
+		
+		// unpacking the arguments
 		int leaderTerm = param.getTerm();
+		int prevLogIndex = param.getPreLogIndex();
+		int prevLogTerm = param.getPreLogTerm();
+		String entries = param.getEntry();
+		
 		int currentTerm = node.getCurrentTerm();
 		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if(leaderTerm<currentTerm) return new AppendEntryRes(currentTerm,false);
+		
+		// Reply false if log doesn¡¯t contain an entry at prevLogIndex whose term matches prevLogTerm
+		if(node.logEntryTerm(prevLogIndex)!=prevLogTerm) return new AppendEntryRes(currentTerm,false);
+		
+		/** If an existing entry conflicts with a new one (same index
+		  * but different terms), delete the existing entry and all that
+		  * follow it (¡ì5.3)
+          */
 		
 		return null;
 	}
