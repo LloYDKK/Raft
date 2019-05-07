@@ -13,6 +13,10 @@ public class AppendEntryPar {
 	private Log[] entries; // log entries(empty for heartbeat)
 	private int leaderCommit; //leader's commitIndex
 	
+	public int getTerm() {
+		return term;
+	}
+	
 	private AppendEntryPar(Builder builder) {
 		this.term = builder.term;
 		this.leaderId = builder.leaderId;

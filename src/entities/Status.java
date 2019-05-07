@@ -7,19 +7,7 @@ package entities;
 
 /* the status of the nodes */
 public class Status {
-	private final int FOLLOWER = 0;
-	private final int CANDIDATE = 1;
-	private final int LEADER = 2;
-	
-	public int follower() {
-		return FOLLOWER;
-	}
-	
-	public int candiate() {
-		return CANDIDATE;
-	}
-	
-	public int leader() {
-		return LEADER;
-	}
+	public static final int FOLLOWER = 0;
+	public static final int CANDIDATE = 1;
+	public static final int LEADER = 2;
 }

@@ -4,6 +4,7 @@ import entities.AppendEntryPar;
 import entities.AppendEntryRes;
 import entities.RequestVotePar;
 import entities.RequestVoteRes;
+import entities.Status;
 import raft.ConsensusInterf;
 import raft.NodeInterf;
 
@@ -13,21 +14,55 @@ import raft.NodeInterf;
   */
 
 public class Consensus implements ConsensusInterf {
-	public final Node node;
+	private final Node node;
 	
 	public Consensus(Node n) {
-		this.node = n;
+		node = n;
 	}
 	
 	@Override
 	public RequestVoteRes requestVote(RequestVotePar param) {
 		// TODO Auto-generated method stub
-		return null;
+		
+		// unpacking the arguements
+		int candidTerm = param.getTerm();
+		String candidID = param.getCandidate();
+		int candidLogIndex = param.getLastLogIndex();
+		int candidLogTerm = param.getlastLogTerm();
+		
+		// status for the current node
+		int currentTerm = node.getCurrentTerm();
+		int nodeLogIndex = node.lastLogIndex();
+		int nodeLogTerm = node.lastLogTerm();
+		
+		// Reply false if term < currentTerm (¡ì5.1)
+		if (candidTerm < currentTerm) return new RequestVoteRes(currentTerm,false);
+		
+		/** If votedFor is null or candidateId, and candidate¡¯s log is at
+	      * least as up-to-date as receiver¡¯s log, grant vote (¡ì5.2, ¡ì5.4)
+	      */ 
+		if ((node.getVotedFor().equals("") || node.getVotedFor().equals(candidID))
+			 && nodeLogIndex <= candidLogIndex
+		     && nodeLogTerm <= candidLogTerm){
+			node.setStatus(Status.FOLLOWER);
+			node.setLeader(candidID);
+			node.setVotedFor(candidID);
+			node.setCurrentTerm(candidTerm);
+			return new RequestVoteRes(candidTerm,true);
+		}
+		
+		return new RequestVoteRes(currentTerm,false);
 	}
 
 	@Override
 	public AppendEntryRes appendEntries(AppendEntryPar param) {
 		// TODO Auto-generated method stub
+		int leaderTerm = param.getTerm();
+		int currentTerm = node.getCurrentTerm();
+		
+		// Reply false if term < currentTerm (¡ì5.1)
+		if(leaderTerm<currentTerm) return new AppendEntryRes(currentTerm,false);
+		
 		return null;
 	}
 

@@ -10,16 +10,16 @@ public class AppendEntryRes {
 	private boolean success;
 	
 	public AppendEntryRes(int t, boolean s) {
-		this.term = t;
-		this.success = s;
+		term = t;
+		success = s;
 	}
 	
 	public AppendEntryRes(int t) {
-		this.term = t;
+		term = t;
 	}
 	
 	public AppendEntryRes(boolean s) {
-		this.success = s;
+		success = s;
 	}
 	
 }

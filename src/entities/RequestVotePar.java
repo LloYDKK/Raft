@@ -18,6 +18,22 @@ public class RequestVotePar {
 		this.lastLogTerm = builder.lastLogTerm;
 	}
 	
+	public int getTerm() {
+		return term;
+	}
+	
+	public String getCandidate() {
+		return candidateId;
+	}
+	
+	public int getLastLogIndex() {
+		return lastLogIndex;
+	}
+	
+	public int getlastLogTerm() {
+		return lastLogTerm;
+	}
+	
 	public static final class Builder{
 		private int term;
 		private String candidateId;
@@ -48,5 +64,4 @@ public class RequestVotePar {
 			return new RequestVotePar(this);
 		}
 	}
-	
 }
