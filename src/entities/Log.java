@@ -3,6 +3,8 @@ package entities;
 import java.util.HashMap;
 import java.util.Map;
 
+import entities.Entry;
+
 /**
   * @author Kuan Tian
   * 2019-05-04
@@ -25,6 +27,7 @@ public class Log {
 	
 	// get the last index in the log
 	public int getLastLogIndex() {
+		if(log.isEmpty()) return -1;
 		return index;
 	}
 	
@@ -58,4 +61,5 @@ public class Log {
 			log.remove(x);
 		}
 	}
+	
 }
