@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import implement.Consensus;
+
 /**
   * @author Kuan Tian
   * 2019-05-03
@@ -98,20 +100,4 @@ public class RPCServer{
 	public void register(Class service) {
 		serviceRegistry.put(service.getName(), service);
 	}
-	
-	public static void main(String[] args) {
-		new Thread(new Runnable() {
-			public void run() {
-				try {
-					RPCServer server = new RPCServer(8081);
-					server.register(RaftService.class);
-					server.start();
-					
-				}catch(IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}).start();
-	}
-	
 }

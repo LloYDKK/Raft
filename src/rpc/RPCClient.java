@@ -45,9 +45,4 @@ public class RPCClient<T> {
                     }
                 });
     }
-    
-    public static void main(String[] args) {
-    	RaftProtocol raft = RPCClient.getRemoteProxyObj(RaftService.class, new InetSocketAddress("localhost", 8081));
-    	raft.hello();
-    }
 }

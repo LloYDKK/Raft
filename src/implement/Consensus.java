@@ -7,7 +7,6 @@ import entities.RequestVotePar;
 import entities.RequestVoteRes;
 import entities.Status;
 import raft.ConsensusInterf;
-import raft.NodeInterf;
 
 /**
   * @author Kuan Tian
@@ -35,6 +34,7 @@ public class Consensus implements ConsensusInterf {
 		int currentTerm = node.getCurrentTerm();
 		int nodeLogIndex = node.lastLogIndex();
 		int nodeLogTerm = node.lastLogTerm();
+		node.receiveFromLeader();
 		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if (candidTerm < currentTerm) return new RequestVoteRes(currentTerm,false);
@@ -66,7 +66,9 @@ public class Consensus implements ConsensusInterf {
 		Entry entries = param.getEntry();
 		int leaderCommit = param.getLeaderCommit();
 		
+		// status for the current node
 		int currentTerm = node.getCurrentTerm();
+		node.receiveFromLeader();
 		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if(leaderTerm<currentTerm) return new AppendEntryRes(currentTerm,false);

@@ -21,4 +21,12 @@ public class RequestVoteRes {
 	public RequestVoteRes(boolean v) {
 		this.voteGranted = v;
 	}
+	
+	public boolean getGranted() {
+		return voteGranted;
+	}
+	
+	public int getTerm() {
+		return term;
+	}
 }
