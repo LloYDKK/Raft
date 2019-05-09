@@ -1,7 +1,13 @@
 package implement;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.rmi.AlreadyBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
@@ -23,8 +29,6 @@ import entities.RequestVoteRes;
 import entities.Status;
 import raft.ConsensusInterf;
 import raft.NodeInterf;
-import rpc.RPCClient;
-import rpc.RPCServer;
 
 /**
   * @author Kuan Tian
@@ -33,16 +37,17 @@ import rpc.RPCServer;
 
 public class Node implements NodeInterf {
 	
-	private int status = Status.FOLLOWER;
-	private String leaderID;
-	private boolean receiveFromLeader;
 	private static Logger LOG = Logger.getAnonymousLogger();
+	
+	private int status ;
+	private boolean receiveFromLeader;
 	private String name;
 	private PeerList peerList;
-	private ConsensusInterf raft;
 	ExecutorService electExecutor;
 	ExecutorService hbExecutor;
 	ExecutorService RPCExecutor;
+	private int port;
+	private Consensus consensus;
 		
 	/** Persistent state on all servers
 	  * Updated on stable storage before 
@@ -60,17 +65,35 @@ public class Node implements NodeInterf {
 	HashMap<Node,Integer> nextIndex; // for each server, index of the next log entry to send to that server
 	HashMap<Node,Integer> matchIndex; // for each server, index of highest log entry known to be replicated on server
 	
-	public Node() {
+	public Node(int port, PeerList peerList) {
+		status = Status.FOLLOWER;
+		this.port = port;
+		this.peerList = peerList;
 		log = new Log();
+
+		try {
+			consensus = new Consensus(this);
+			name = InetAddress.getLocalHost().getHostAddress() + ":" +port;
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	// getter and setter
+	public String getName() {
+		return name;
+	}
+	
 	public void setStatus(int s) {
 		status = s;
 	}
 	
 	public void setLeader(String l) {
-		leaderID = l;
+		peerList.setLeader(l);
 	}
 	
 	public int getCurrentTerm() {
@@ -128,9 +151,8 @@ public class Node implements NodeInterf {
 	}
 	
 	// init the node
-	public void init() {
+	public void init() throws RemoteException {
 		boolean running = true;
-		new Consensus(this);
 		electExecutor = Executors.newFixedThreadPool(1);
 		hbExecutor = Executors.newFixedThreadPool(1);
 		RPCExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -139,11 +161,14 @@ public class Node implements NodeInterf {
 		new Thread(new Runnable() {
 			public void run() {
 				try {
-					RPCServer server = new RPCServer(8088);
-					server.register(Consensus.class);
-					server.start();
+					Registry registry = LocateRegistry.createRegistry(port);
+					
+					registry.bind("consensus", consensus);
 					
 				}catch(IOException e) {
+					e.printStackTrace();
+				} catch (AlreadyBoundException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -176,7 +201,10 @@ public class Node implements NodeInterf {
 				e.printStackTrace();
 			}
 			
-			if(receiveFromLeader) return;
+			if(receiveFromLeader) {
+				LOG.info(name + ": receiving message from leader!");
+				return;
+			}
 			
 			/** On conversion to candidate, start election: 
 			  * Increment currentTerm 
@@ -185,7 +213,7 @@ public class Node implements NodeInterf {
 			  * Send RequestVote RPCs to all other servers
 			  */
 			status = Status.CANDIDATE;
-			LOG.info("no message from leader, start election!");
+			LOG.info(name + ": no message from leader, start election!");
 			
 			currentTerm += 1;
 			votedFor = name;
@@ -217,8 +245,12 @@ public class Node implements NodeInterf {
 													  .lastLogIndex(lastLI)
 													  .lastLogTerm(lastLT).build();
 						
-						raft = RPCClient.getRemoteProxyObj(Consensus.class, peer);
-						RequestVoteRes response = raft.requestVote(param);
+						Registry registry = LocateRegistry.getRegistry(peer.getHostName(),peer.getPort());
+						
+						ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
+						
+						RequestVoteRes response = consensus1.requestVote(param);
+						LOG.info(name+"   "+response.getTerm()+"  "+response.getGranted());
 						return response;
 						}
 					}));
@@ -261,7 +293,7 @@ public class Node implements NodeInterf {
             }
 			
             try {
-				latch.await(3, TimeUnit.SECONDS);
+				latch.await(10, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -273,7 +305,7 @@ public class Node implements NodeInterf {
             // the voting state
             int granted = success.get();
             
-            LOG.info("the number of granted number is: "+granted);
+            LOG.info(name+" the number of granted number is: "+granted);
             
             // become the leader if vote > 2
             if(granted >= peerList.peerAmount() / 2) {
@@ -306,6 +338,39 @@ public class Node implements NodeInterf {
 	public AppendEntryRes aEntriesOperator(AppendEntryPar param) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	public static void main(String[] args) {
+		PeerList peerList = new PeerList();
+		peerList.addPeer("192.168.1.2:8081", new InetSocketAddress("192.168.1.2",8081));
+		peerList.addPeer("192.168.1.2:8082", new InetSocketAddress("192.168.1.2",8082));
+		
+		Thread t1 = new Thread() {
+			public void run() {
+				try {
+					new Node(8081,peerList).init();
+				} catch (RemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		};
+		
+		Thread t2 = new Thread() {
+			public void run() {
+				try {
+					new Node(8082,peerList).init();
+				} catch (RemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		};
+		
+		
+		t1.start();
+		t2.start();
+		
 	}
 
 }

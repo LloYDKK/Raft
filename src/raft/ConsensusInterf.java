@@ -1,5 +1,8 @@
 package raft;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
 import entities.AppendEntryPar;
 import entities.AppendEntryRes;
 import entities.RequestVotePar;
@@ -11,8 +14,10 @@ import entities.RequestVoteRes;
   */
 
 /* implement the basic consensus algorithm */
-public interface ConsensusInterf {
-	public RequestVoteRes requestVote(RequestVotePar param);
+public interface ConsensusInterf extends Remote{
+	public RequestVoteRes requestVote(RequestVotePar param) throws RemoteException;
 	
-	public AppendEntryRes appendEntries(AppendEntryPar param);
+	public AppendEntryRes appendEntries(AppendEntryPar param) throws RemoteException;
+	
+	public void hello(String name) throws RemoteException;
 }

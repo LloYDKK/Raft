@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import implement.Consensus;
-
 /**
   * @author Kuan Tian
   * 2019-05-03

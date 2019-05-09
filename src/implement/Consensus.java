@@ -1,5 +1,9 @@
 package implement;
 
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.logging.Logger;
+
 import entities.AppendEntryPar;
 import entities.AppendEntryRes;
 import entities.Entry;
@@ -13,15 +17,16 @@ import raft.ConsensusInterf;
   * 2019-05-06
   */
 
-public class Consensus implements ConsensusInterf {
+public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 	private final Node node;
+	private static Logger LOG = Logger.getAnonymousLogger();
 	
-	public Consensus(Node n) {
+	protected Consensus(Node n) throws RemoteException {
 		node = n;
 	}
 	
 	@Override
-	public RequestVoteRes requestVote(RequestVotePar param) {
+	public RequestVoteRes requestVote(RequestVotePar param) throws RemoteException {
 		// TODO Auto-generated method stub
 		
 		// unpacking the arguements
@@ -36,6 +41,8 @@ public class Consensus implements ConsensusInterf {
 		int nodeLogTerm = node.lastLogTerm();
 		node.receiveFromLeader();
 		
+		
+		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if (candidTerm < currentTerm) return new RequestVoteRes(currentTerm,false);
 		
@@ -45,6 +52,7 @@ public class Consensus implements ConsensusInterf {
 		if ((node.getVotedFor().equals("") || node.getVotedFor().equals(candidID))
 			 && nodeLogIndex <= candidLogIndex
 		     && nodeLogTerm <= candidLogTerm){
+			LOG.info("vote for"+ candidID);
 			node.setStatus(Status.FOLLOWER);
 			node.setLeader(candidID);
 			node.setVotedFor(candidID);
@@ -56,7 +64,7 @@ public class Consensus implements ConsensusInterf {
 	}
 
 	@Override
-	public AppendEntryRes appendEntries(AppendEntryPar param) {
+	public AppendEntryRes appendEntries(AppendEntryPar param) throws RemoteException {
 		// TODO Auto-generated method stub
 		
 		// unpacking the arguments
@@ -70,6 +78,8 @@ public class Consensus implements ConsensusInterf {
 		int currentTerm = node.getCurrentTerm();
 		node.receiveFromLeader();
 		
+		LOG.info("receive new entry");
+		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if(leaderTerm<currentTerm) return new AppendEntryRes(currentTerm,false);
 		
@@ -80,7 +90,10 @@ public class Consensus implements ConsensusInterf {
 		}
 		
 		// receive a heartbeat
-		if(entries.getCommand() == null || entries.getCommand().equals("")) return new AppendEntryRes(currentTerm,true);
+		if(entries.getCommand() == null || entries.getCommand().equals("")) {
+			LOG.info("receive heartbeat");
+			return new AppendEntryRes(currentTerm,true);
+		}
 		
 		// Reply false if log doesn¡¯t contain an entry at prevLogIndex whose term matches prevLogTerm
 		if(node.logEntryTerm(prevLogIndex)!=prevLogTerm) return new AppendEntryRes(currentTerm,false);
@@ -104,5 +117,13 @@ public class Consensus implements ConsensusInterf {
 		
 		return new AppendEntryRes(currentTerm,true);
 	}
+
+	@Override
+	public void hello(String name) throws RemoteException{
+		// TODO Auto-generated method stub
+		System.out.println("hello " + node.getName());
+	}
+
+
 
 }

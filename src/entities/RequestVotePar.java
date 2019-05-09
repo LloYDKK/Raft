@@ -1,11 +1,13 @@
 package entities;
 
+import java.io.Serializable;
+
 /**
   * @author Kuan Tian
   * 2019-05-04
   */
 
-public class RequestVotePar {
+public class RequestVotePar implements Serializable {
 	private int term; //candidate's term
 	private String candidateId; //candidate requesting vote
 	private int lastLogIndex; // index of candidate's last log entry
