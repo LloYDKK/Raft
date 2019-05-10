@@ -388,49 +388,4 @@ public class Node implements NodeInterf {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
-	public static void main(String[] args) {
-		PeerList peerList = new PeerList();
-		peerList.addPeer("192.168.1.2:8081", new InetSocketAddress("192.168.1.2",8081));
-		peerList.addPeer("192.168.1.2:8082", new InetSocketAddress("192.168.1.2",8082));
-		peerList.addPeer("192.168.1.2:8083", new InetSocketAddress("192.168.1.2",8083));
-		
-		Thread t1 = new Thread() {
-			public void run() {
-				try {
-					new Node(8081,peerList).init();
-				} catch (RemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		};
-		
-		Thread t2 = new Thread() {
-			public void run() {
-				try {
-					new Node(8082,peerList).init();
-				} catch (RemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		};
-		
-		Thread t3 = new Thread() {
-			public void run() {
-				try {
-					new Node(8083,peerList).init();
-				} catch (RemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		};
-		
-		
-		t1.start();
-		t2.start();
-		t3.start();
-	}
 }
