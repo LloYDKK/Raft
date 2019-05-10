@@ -162,9 +162,7 @@ public class Node implements NodeInterf {
 			public void run() {
 				try {
 					Registry registry = LocateRegistry.createRegistry(port);
-					
 					registry.bind("consensus", consensus);
-					
 				}catch(IOException e) {
 					e.printStackTrace();
 				} catch (AlreadyBoundException e) {
@@ -233,12 +231,8 @@ public class Node implements NodeInterf {
 					@Override
 					public Object call() throws Exception {
 						// TODO Auto-generated method stub
-						int lastLT = 0;
-						int lastLI = 0;
-						if(lastLogIndex() != -1) {
-							lastLT = lastLogTerm();
-							lastLI = lastLogIndex();
-						}
+						int lastLT = lastLogTerm();
+						int lastLI = lastLogIndex();
 						
 						RequestVotePar param = builder.term(currentTerm)
 													  .candidateId(name)
@@ -293,7 +287,7 @@ public class Node implements NodeInterf {
             }
 			
             try {
-				latch.await(10, TimeUnit.SECONDS);
+				latch.await(3, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

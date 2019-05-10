@@ -27,12 +27,12 @@ public class Log {
 	
 	// get the last index in the log
 	public int getLastLogIndex() {
-		if(log.isEmpty()) return -1;
 		return index;
 	}
 	
 	// get the term of the last entry in the log
 	public int getLastLogTerm() {
+		if(log.isEmpty()) return 0;
 		return log.get(index).getEntryTerm();
 	}
 	

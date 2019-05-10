@@ -41,8 +41,6 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		int nodeLogTerm = node.lastLogTerm();
 		node.receiveFromLeader();
 		
-		
-		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if (candidTerm < currentTerm) return new RequestVoteRes(currentTerm,false);
 		

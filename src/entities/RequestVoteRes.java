@@ -1,11 +1,13 @@
 package entities;
 
+import java.io.Serializable;
+
 /**
   * @author Kuan Tian
   * 2019-05-04
   */
 
-public class RequestVoteRes {
+public class RequestVoteRes implements Serializable{
 	private int term;  // currentTerm, for candidate to update itself
 	private boolean voteGranted;  // true means candidate received vote
 	
