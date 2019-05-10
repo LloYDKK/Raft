@@ -48,7 +48,7 @@ public class Log {
 	}
 	
 	// get the commadn give the index
-	public String getCommand(int i ) {
+	public String getCommand(int i) {
 		if(log.get(i)==null) return "Null";
 		return log.get(i).getCommand();
 	}

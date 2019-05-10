@@ -1,11 +1,13 @@
 package entities;
 
+import java.io.Serializable;
+
 /**
   * @author Kuan Tian
   * 2019-05-04
   */
 
-public class AppendEntryPar {
+public class AppendEntryPar implements Serializable{
 	private int term; // leader's term
 	private String leaderId; // leader's ID
 	private int preLogIndex; // index of log entry immediately preceding new ones

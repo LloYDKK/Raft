@@ -1,10 +1,5 @@
 package raft;
 
-import entities.AppendEntryPar;
-import entities.AppendEntryRes;
-import entities.RequestVotePar;
-import entities.RequestVoteRes;
-
 /**
   * @author Kuan Tian
   * 2019-05-06
@@ -14,8 +9,6 @@ import entities.RequestVoteRes;
  * implement the operators for 
  * requestvote RPC and appendEntry RPC */
 
-public interface NodeInterf {	
-	public RequestVoteRes rVoteOperator(RequestVotePar param);
-	
-	public AppendEntryRes aEntriesOperator(AppendEntryPar param);
+public interface NodeInterf {		
+	public String redirectToLeader(String clientMessage); // redircet the client request to the leader
 }

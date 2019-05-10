@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -124,7 +125,6 @@ public class Node implements NodeInterf {
 		receiveFromLeader = true;
 	}
 	
-	
 	/* log opeator */
 	public int lastLogIndex() {
 		return log.getLastLogIndex();
@@ -190,7 +190,7 @@ public class Node implements NodeInterf {
 			receiveFromLeader = false;
 			
 			// waiting for messages from the leader
-			long electionTimeOut = (long) (Math.random()*150 + 150) ;
+			long electionTimeOut = (long) (Math.random()*1500 + 150) ;
 			
 			try {
 				Thread.sleep(electionTimeOut);
@@ -215,7 +215,7 @@ public class Node implements NodeInterf {
 			
 			currentTerm += 1;
 			votedFor = name;
-			electionTimeOut = (long) (Math.random()*150 + 150) ;
+			electionTimeOut = (long) (Math.random()*1500 + 150) ;
 			
 			ArrayList<InetSocketAddress> peers = peerList.allPeers(name);
 			ArrayList<Future> futureList = new ArrayList<Future>();
@@ -320,16 +320,71 @@ public class Node implements NodeInterf {
 		public void run() {
 			// TODO Auto-generated method stub
 			if(status!=Status.LEADER) return; // if self status is not leader, dont need to send heartbeat
+			
+			LOG.info(name + ": Sending heartbeat to all the peers");
+			
+			ArrayList<InetSocketAddress> peers = peerList.allPeers(name);
+			
+			AppendEntryPar.Builder builder = new AppendEntryPar.Builder();
+			
+			AppendEntryPar heartbeat = builder.leaderId(name)
+                    .entries(new Entry())
+                    .term(currentTerm)
+                    .preLogIndex(0)
+                    .preLogTerm(0)
+                    .leaderCommit(0)
+                    .build();
+			
+			for(InetSocketAddress peer : peers) {
+				RPCExecutor.submit(new Runnable() {
+
+					@Override
+					public void run() {
+						// TODO Auto-generated method stub
+						try {
+							Registry registry = LocateRegistry.getRegistry(peer.getHostName(),peer.getPort());
+							ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
+							AppendEntryRes response = consensus1.appendEntries(heartbeat);
+							
+							int term = response.getTerm();
+							
+							// convert to follower if term > currentTerm
+							if(term>currentTerm) {
+								LOG.info(name + "Now I become follower!");
+								status = Status.FOLLOWER;
+								currentTerm = term;
+								votedFor = "";
+							}
+							
+						} catch (RemoteException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						} catch (NotBoundException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					
+				});
+				
+				
+			}
+			
+			long heartBeatTime = 100 ;
+			
+			try {
+				Thread.sleep(heartBeatTime);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			
 		}}
 	
+	
 	@Override
-	public RequestVoteRes rVoteOperator(RequestVotePar param) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public AppendEntryRes aEntriesOperator(AppendEntryPar param) {
+	public String redirectToLeader(String clientMessage) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -338,6 +393,7 @@ public class Node implements NodeInterf {
 		PeerList peerList = new PeerList();
 		peerList.addPeer("192.168.1.2:8081", new InetSocketAddress("192.168.1.2",8081));
 		peerList.addPeer("192.168.1.2:8082", new InetSocketAddress("192.168.1.2",8082));
+		peerList.addPeer("192.168.1.2:8083", new InetSocketAddress("192.168.1.2",8083));
 		
 		Thread t1 = new Thread() {
 			public void run() {
@@ -361,10 +417,20 @@ public class Node implements NodeInterf {
 			}
 		};
 		
+		Thread t3 = new Thread() {
+			public void run() {
+				try {
+					new Node(8083,peerList).init();
+				} catch (RemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		};
+		
 		
 		t1.start();
 		t2.start();
-		
+		t3.start();
 	}
-
 }

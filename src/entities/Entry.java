@@ -1,14 +1,18 @@
 package entities;
 
+import java.io.Serializable;
+
 /**
   * @author Kuan Tian
   * 2019-05-07
   */
 
 // store the entries as a tuple structure
-public class Entry{
+public class Entry implements Serializable{
 	private int term;
 	private String command;
+	
+	public Entry() {}
 	
 	public Entry(int term, String command) {
 		this.term = term;

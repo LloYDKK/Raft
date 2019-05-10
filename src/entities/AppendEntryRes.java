@@ -1,11 +1,13 @@
 package entities;
 
+import java.io.Serializable;
+
 /**
   * @author Kuan Tian
   * 2019-05-04
   */
 
-public class AppendEntryRes {
+public class AppendEntryRes implements Serializable{
 	private int term;
 	private boolean success;
 	
@@ -20,6 +22,10 @@ public class AppendEntryRes {
 	
 	public AppendEntryRes(boolean s) {
 		success = s;
+	}
+	
+	public int getTerm() {
+		return term;
 	}
 	
 }

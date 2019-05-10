@@ -18,6 +18,4 @@ public interface ConsensusInterf extends Remote{
 	public RequestVoteRes requestVote(RequestVotePar param) throws RemoteException;
 	
 	public AppendEntryRes appendEntries(AppendEntryPar param) throws RemoteException;
-	
-	public void hello(String name) throws RemoteException;
 }

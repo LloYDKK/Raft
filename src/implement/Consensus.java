@@ -76,8 +76,6 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		int currentTerm = node.getCurrentTerm();
 		node.receiveFromLeader();
 		
-		LOG.info("receive new entry");
-		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if(leaderTerm<currentTerm) return new AppendEntryRes(currentTerm,false);
 		
@@ -89,7 +87,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		
 		// receive a heartbeat
 		if(entries.getCommand() == null || entries.getCommand().equals("")) {
-			LOG.info("receive heartbeat");
+			LOG.info("receive heartbeat from leader");
 			return new AppendEntryRes(currentTerm,true);
 		}
 		
@@ -115,13 +113,4 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		
 		return new AppendEntryRes(currentTerm,true);
 	}
-
-	@Override
-	public void hello(String name) throws RemoteException{
-		// TODO Auto-generated method stub
-		System.out.println("hello " + node.getName());
-	}
-
-
-
 }
