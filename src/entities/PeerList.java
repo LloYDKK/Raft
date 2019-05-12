@@ -13,7 +13,7 @@ import java.util.Map;
 // store all the peers and their addresses
 public class PeerList {
 	private Map<String,InetSocketAddress> peerList;
-	private String leaderID;
+	private String leaderID = "";
 	
 	public PeerList() {
 		peerList = new HashMap<String,InetSocketAddress>();

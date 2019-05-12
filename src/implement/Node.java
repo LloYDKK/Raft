@@ -52,6 +52,7 @@ public class Node implements NodeInterf {
 	ExecutorService RPCExecutor;
 	ExecutorService stateMachineExecutor;
 	private int port;
+	private int gamePort;
 	private Consensus consensus;
 	private GameServer gameServer;
 	
@@ -71,12 +72,13 @@ public class Node implements NodeInterf {
 	HashMap<Node,Integer> nextIndex; // for each server, index of the next log entry to send to that server
 	HashMap<Node,Integer> matchIndex; // for each server, index of highest log entry known to be replicated on server
 	
-	public Node(int port, PeerList peerList) {
+	public Node(int port, PeerList peerList, int gamePort) {
 		status = Status.FOLLOWER;
 		this.port = port;
 		this.peerList = peerList;
+		this.gamePort = gamePort;
 		log = new Log();
-		gameServer = new GameServer(this);
+		gameServer = new GameServer(this,gamePort);
 		
 		try {
 			consensus = new Consensus(this);
@@ -170,34 +172,31 @@ public class Node implements NodeInterf {
 		boolean running = true;
 		electExecutor = Executors.newFixedThreadPool(1);
 		hbExecutor = Executors.newFixedThreadPool(1);
-		RPCExecutor = Executors.newFixedThreadPool(1);
+		RPCExecutor = Executors.newFixedThreadPool(peerList.peerAmount());
 		stateMachineExecutor = Executors.newFixedThreadPool(1);
 		
-		// start the RPC service
-		new Thread(new Runnable() {
-			public void run() {
-				try {
-					Registry registry = LocateRegistry.createRegistry(port);
-					registry.bind("consensus", consensus);
-				}catch(IOException e) {
-					e.printStackTrace();
-				} catch (AlreadyBoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}).start();	
+		// start the rmi server
+		try {
+			Registry registry = LocateRegistry.createRegistry(port);
+			registry.bind("consensus", consensus);
+		} catch (AlreadyBoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
-		// start the game service
+		// start the game server
 		new Thread(new Runnable() {
 			public void run() {
 				try {
 					gameServer.launch();
-				}catch(IOException e) {
+				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
-		}).start();	
+		}).start();
 		
 		while(running) {
 			electExecutor.submit(new Elect());
@@ -210,6 +209,7 @@ public class Node implements NodeInterf {
 		String response = "";
 		if(status != Status.LEADER) {
 			LOG.info(name+": I am not the leader, redirect to the leader");
+			if (peerList.getLeader().equals("")) return "3#"+name;
 			return "3#"+peerList.getLeader();
 		}
 		

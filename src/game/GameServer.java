@@ -16,16 +16,17 @@ import implement.Node;
   */
 
 public class GameServer {
-		private static final int THREADPOOLSIZE = 4;
 		private Node node;
+		private int port;
 		
-		public GameServer(Node n) {
+		public GameServer(Node n,int port) {
 			node = n;
+			this.port = port;
 		}
 		
 	    public void launch() throws IOException
 	    {
-	    	ServerSocket server = new ServerSocket(8888);
+	    	ServerSocket server = new ServerSocket(port);
 	    	Socket client = server.accept();
 	    	try
 		    {
@@ -36,10 +37,7 @@ public class GameServer {
 	    			        BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream()));
 	    			        String request = br.readLine();
 	    			        System.out.println(request);
-	    		            
-	    			        String gameResult= node.handleRequest(request);;
-	    			   
-	    		    		
+	    			        String gameResult= node.handleRequest(request);
 	    		            outPut.println(gameResult);
 	    				}catch(IOException e) {
 	    					e.printStackTrace();
