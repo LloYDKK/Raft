@@ -14,14 +14,13 @@ import implement.Node;
 public class raftTest {
 	public static void main(String[] args) {
 		PeerList peerList = new PeerList();
-		peerList.addPeer("192.168.1.2:8081", new InetSocketAddress("192.168.1.2",8081));
-		peerList.addPeer("192.168.1.2:8082", new InetSocketAddress("192.168.1.2",8082));
-		peerList.addPeer("192.168.1.2:8083", new InetSocketAddress("192.168.1.2",8083));
+		peerList.addPeer("10.12.13.33:8081", new InetSocketAddress("10.12.13.33",8081));
+		//peerList.addPeer("10.12.13.33:8082", new InetSocketAddress("10.12.13.33",8082));
+		//peerList.addPeer("10.12.13.33:8083", new InetSocketAddress("10.12.13.33",8083));
 		
 		Node n1 = new Node(8081,peerList);
 		Node n2 = new Node(8082,peerList);
 		Node n3 = new Node(8083,peerList);
-		
 		
 		Thread t1 = new Thread() {
 			public void run() {
@@ -56,9 +55,6 @@ public class raftTest {
 			}
 		};
 		
-		
 		t1.start();
-		t2.start();
-		t3.start();
 	}
 }

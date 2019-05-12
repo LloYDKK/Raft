@@ -13,9 +13,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
@@ -28,6 +30,7 @@ import entities.PeerList;
 import entities.RequestVotePar;
 import entities.RequestVoteRes;
 import entities.Status;
+import game.GameServer;
 import raft.ConsensusInterf;
 import raft.NodeInterf;
 
@@ -47,9 +50,11 @@ public class Node implements NodeInterf {
 	ExecutorService electExecutor;
 	ExecutorService hbExecutor;
 	ExecutorService RPCExecutor;
+	ExecutorService stateMachineExecutor;
 	private int port;
 	private Consensus consensus;
-		
+	private GameServer gameServer;
+	
 	/** Persistent state on all servers
 	  * Updated on stable storage before 
 	  * responding to RPCs
@@ -71,7 +76,8 @@ public class Node implements NodeInterf {
 		this.port = port;
 		this.peerList = peerList;
 		log = new Log();
-
+		gameServer = new GameServer(this);
+		
 		try {
 			consensus = new Consensus(this);
 			name = InetAddress.getLocalHost().getHostAddress() + ":" +port;
@@ -125,6 +131,15 @@ public class Node implements NodeInterf {
 		receiveFromLeader = true;
 	}
 	
+	public boolean isLeader() {
+		if(status == Status.LEADER) return true;
+		return false;
+	}
+	
+	public String getLeader() {
+		return peerList.getLeader();
+	}
+	
 	/* log opeator */
 	public int lastLogIndex() {
 		return log.getLastLogIndex();
@@ -155,7 +170,8 @@ public class Node implements NodeInterf {
 		boolean running = true;
 		electExecutor = Executors.newFixedThreadPool(1);
 		hbExecutor = Executors.newFixedThreadPool(1);
-		RPCExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		RPCExecutor = Executors.newFixedThreadPool(1);
+		stateMachineExecutor = Executors.newFixedThreadPool(1);
 		
 		// start the RPC service
 		new Thread(new Runnable() {
@@ -172,10 +188,43 @@ public class Node implements NodeInterf {
 			}
 		}).start();	
 		
+		// start the game service
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					gameServer.launch();
+				}catch(IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();	
+		
 		while(running) {
 			electExecutor.submit(new Elect());
 			hbExecutor.submit(new HeartBeat());
 		}
+	}
+	
+	//handle the request from the client
+	public String handleRequest(String command) {
+		String response = "";
+		if(status != Status.LEADER) {
+			LOG.info(name+": I am not the leader, redirect to the leader");
+			return "3#"+peerList.getLeader();
+		}
+		
+		Future f1 = stateMachineExecutor.submit(new StateMachine(command));
+		
+		try {
+			response = f1.get().toString();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return "1#"+response;
 	}
 	
 	// election operation
@@ -303,7 +352,7 @@ public class Node implements NodeInterf {
             
             // become the leader if vote > 2
             if(granted >= peerList.peerAmount() / 2) {
-            	LOG.info("now "+name+" is the leader");
+            	LOG.info(name+": now I am the leader");
             	status = Status.LEADER;
             	peerList.setLeader(name);
             }
@@ -328,12 +377,12 @@ public class Node implements NodeInterf {
 			AppendEntryPar.Builder builder = new AppendEntryPar.Builder();
 			
 			AppendEntryPar heartbeat = builder.leaderId(name)
-                    .entries(new Entry())
-                    .term(currentTerm)
-                    .preLogIndex(0)
-                    .preLogTerm(0)
-                    .leaderCommit(0)
-                    .build();
+                    						  .entries(new Entry())
+                    						  .term(currentTerm)
+                    						  .preLogIndex(0)
+                    						  .preLogTerm(0)
+                    						  .leaderCommit(0)
+                    						  .build();
 			
 			for(InetSocketAddress peer : peers) {
 				RPCExecutor.submit(new Runnable() {
@@ -350,7 +399,7 @@ public class Node implements NodeInterf {
 							
 							// convert to follower if term > currentTerm
 							if(term>currentTerm) {
-								LOG.info(name + "Now I become follower!");
+								LOG.info(name + ": Now I become follower!");
 								status = Status.FOLLOWER;
 								currentTerm = term;
 								votedFor = "";
@@ -370,7 +419,7 @@ public class Node implements NodeInterf {
 				
 			}
 			
-			long heartBeatTime = 100 ;
+			long heartBeatTime = 30 ;
 			
 			try {
 				Thread.sleep(heartBeatTime);
@@ -381,11 +430,4 @@ public class Node implements NodeInterf {
 			
 			
 		}}
-	
-	
-	@Override
-	public String redirectToLeader(String clientMessage) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

@@ -50,7 +50,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		if ((node.getVotedFor().equals("") || node.getVotedFor().equals(candidID))
 			 && nodeLogIndex <= candidLogIndex
 		     && nodeLogTerm <= candidLogTerm){
-			LOG.info("vote for"+ candidID);
+			LOG.info("vote for: "+ candidID);
 			node.setStatus(Status.FOLLOWER);
 			node.setLeader(candidID);
 			node.setVotedFor(candidID);
@@ -113,4 +113,5 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		
 		return new AppendEntryRes(currentTerm,true);
 	}
+	
 }

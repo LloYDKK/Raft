@@ -42,4 +42,8 @@ public class PeerList {
 		}
 		return list;
 	}
+	
+	public String getLeader() {
+		return leaderID;
+	}
 }
