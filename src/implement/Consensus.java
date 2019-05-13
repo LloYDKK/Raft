@@ -42,7 +42,10 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		node.receiveFromLeader();
 		
 		// Reply false if term < currentTerm (¡ì5.1)
-		if (candidTerm < currentTerm) return new RequestVoteRes(currentTerm,false);
+		if (candidTerm < currentTerm) {
+			LOG.info("Election: term < currentTerm!");
+			return new RequestVoteRes(currentTerm,false);
+		}
 		
 		/** If votedFor is null or candidateId, and candidate¡¯s log is at
 	      * least as up-to-date as receiver¡¯s log, grant vote (¡ì5.2, ¡ì5.4)
@@ -69,7 +72,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		int leaderTerm = param.getTerm();
 		int prevLogIndex = param.getPreLogIndex();
 		int prevLogTerm = param.getPreLogTerm();
-		Entry entries = param.getEntry();
+		Entry[] entries = param.getEntry();
 		int leaderCommit = param.getLeaderCommit();
 		
 		// status for the current node
@@ -77,7 +80,10 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		node.receiveFromLeader();
 		
 		// Reply false if term < currentTerm (¡ì5.1)
-		if(leaderTerm<currentTerm) return new AppendEntryRes(currentTerm,false);
+		if(leaderTerm<currentTerm) {
+			LOG.info("Append Entry: term < currentTerm!");
+			return new AppendEntryRes(currentTerm,false);
+		}
 		
 		// if term > currentTerm, set the follower status 
 		if(leaderTerm>=currentTerm) {
@@ -85,26 +91,32 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 			node.setCurrentTerm(leaderTerm);
 		}
 		
-		// receive a heartbeat
-		if(entries.getCommand() == null || entries.getCommand().equals("")) {
+		// receive heartbeat
+		if(entries.length == 0) {
 			LOG.info("receive heartbeat from leader");
 			return new AppendEntryRes(currentTerm,true);
 		}
 		
 		// Reply false if log doesn¡¯t contain an entry at prevLogIndex whose term matches prevLogTerm
-		if(node.logEntryTerm(prevLogIndex)!=prevLogTerm) return new AppendEntryRes(currentTerm,false);
+		if(node.logEntryTerm(prevLogIndex) != -1 && node.logEntryTerm(prevLogIndex)!=prevLogTerm) {
+			LOG.info("log doesn¡¯t contain an entry at prevLogIndex!");
+			return new AppendEntryRes(currentTerm,false);
+		}
 		
 		/** If an existing entry conflicts with a new one (same index
 		  * but different terms), delete the existing entry and all that
           * follow it (¡ì5.3)
           */
 		if(node.logEntryTerm(prevLogIndex+1) != -1
-				&& node.logEntryTerm(prevLogIndex+1) != param.getEntry().getEntryTerm()) {
+				&& node.logEntryTerm(prevLogIndex+1) != param.getEntry()[0].getEntryTerm()) {
 			node.logDeleteFrom(prevLogIndex+1);
+			
 		}
 		
 		// Append any new entries not already in the log
-		node.addEntry(entries);
+		for(Entry e:entries){
+			node.addEntry(e);
+			}
 		
 		if(leaderCommit > node.getCommitIndex()) {
 			int i = (int) Math.min(leaderCommit, node.lastLogIndex());

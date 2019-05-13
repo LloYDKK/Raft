@@ -16,7 +16,7 @@ public class RequestVotePar implements Serializable {
 	private RequestVotePar(Builder builder) {
 		this.term = builder.term;
 		this.candidateId = builder.candidateId;
-		this.lastLogIndex = builder.lastLogIndex;
+		this.lastLogIndex = builder.lastLogIndex; 
 		this.lastLogTerm = builder.lastLogTerm;
 	}
 	

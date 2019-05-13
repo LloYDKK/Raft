@@ -62,4 +62,9 @@ public class Log {
 		}
 	}
 	
+	// get the entry by index
+	public Entry getEntry(int index) {
+		return log.get(index);
+	}
+	
 }

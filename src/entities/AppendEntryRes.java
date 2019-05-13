@@ -28,4 +28,8 @@ public class AppendEntryRes implements Serializable{
 		return term;
 	}
 	
+	public boolean getSuccess() {
+		return success;
+	}
+	
 }

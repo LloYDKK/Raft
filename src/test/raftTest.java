@@ -16,9 +16,9 @@ import implement.Node;
 public class raftTest {
 	public static void main(String[] args) {
 		PeerList peerList = new PeerList();
-		peerList.addPeer("10.12.13.33:8081", new InetSocketAddress("10.12.13.33",8081));
-		peerList.addPeer("10.12.13.33:8082", new InetSocketAddress("10.12.13.33",8082));
-		peerList.addPeer("10.12.13.33:8083", new InetSocketAddress("10.12.13.33",8083));
+		peerList.addPeer("192.168.1.2:8081", new InetSocketAddress("192.168.1.2",8081));
+		peerList.addPeer("192.168.1.2:8082", new InetSocketAddress("192.168.1.2",8082));
+		peerList.addPeer("192.168.1.2:8083", new InetSocketAddress("192.168.1.2",8083));
 		
 		Node n1 = new Node(8081,peerList,8881);
 		Node n2 = new Node(8082,peerList,8882);
@@ -57,8 +57,24 @@ public class raftTest {
 			}
 		};
 		
+		Thread t4 = new Thread() {
+			public void run() {
+				try {
+					while(true) {
+					Thread.sleep(10000);
+					System.out.println(n1.handleRequest("register|112|222|333"));
+					System.out.println(n2.handleRequest("register|112|222|333"));
+					System.out.println(n3.handleRequest("register|112|222|333"));}
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		};
+		
 		t1.start();
 		t2.start();
 		t3.start();
+		t4.start();
 	}
 }

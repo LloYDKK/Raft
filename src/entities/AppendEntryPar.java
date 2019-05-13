@@ -12,7 +12,7 @@ public class AppendEntryPar implements Serializable{
 	private String leaderId; // leader's ID
 	private int preLogIndex; // index of log entry immediately preceding new ones
 	private int preLogTerm; // term of prevLogIndex entry
-	private Entry entries; // log entries(empty for heartbeat)
+	private Entry[] entries; // log entries(empty for heartbeat)
 	private int leaderCommit; //leader's commitIndex
 	
 	public int getTerm() {
@@ -27,7 +27,7 @@ public class AppendEntryPar implements Serializable{
 		return preLogTerm;
 	}
 	
-	public Entry getEntry() {
+	public Entry[] getEntry() {
 		return entries;
 	}
 	
@@ -49,7 +49,7 @@ public class AppendEntryPar implements Serializable{
 		private String leaderId;
 		private int preLogIndex;
 		private int preLogTerm;
-		private Entry entries;
+		private Entry[] entries;
 		private int leaderCommit;
 		
 		public Builder term(int t) {
@@ -72,7 +72,7 @@ public class AppendEntryPar implements Serializable{
 			return this;
 		}
 		
-		public Builder entries(Entry t) {
+		public Builder entries(Entry[] t) {
 			entries = t;
 			return this;
 		}
