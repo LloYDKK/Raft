@@ -26,7 +26,7 @@ public class StateMachine implements Callable {
 	public Object call() throws Exception{
 		String[] requestAsArray = new String[5];
 		requestAsArray = command.split("\\|");
-		File dir = new File("d:\\");
+    	File dir = new File("src/userFile");
 	    File[] userFiles = dir.listFiles();
 		String gameResult = "";
 		//user register
@@ -49,7 +49,7 @@ public class StateMachine implements Callable {
                 newUser.setUsername(requestAsArray[1]);
                 newUser.setPassword(requestAsArray[2]);
                 newUser.setEmail(requestAsArray[3]);
-                String newPath = "d:\\"+"\\"+requestAsArray[1]+".dat";
+                String newPath = "src/userFile" + "/"+requestAsArray[1]+".dat";
                 //create new user file
                 try
                 {
@@ -131,14 +131,13 @@ public class StateMachine implements Callable {
             {
                 e.printStackTrace();
             }
-        	//press 'deal'. Start game, deal 2 cards to both sides
+        	//Press 'deal'. Game starts.
             if(requestAsArray[0].equals("deal"))
             {
                 user.resetDeck();
                 user.clearPlayerCards();
                 user.clearDealerCards();
-                user.setInGameState(true);
-                //randomly deal 2 cards to both sides	                			
+                user.setInGameState(true);	                			
                 String playerCard_1 = user.dealCards();
                 user.addPlayerCards(playerCard_1);
                 String playerCard_2 = user.dealCards();
@@ -147,411 +146,193 @@ public class StateMachine implements Callable {
                 user.addDealerCards(dealerCard_1);
                 String dealerCard_2 = user.dealCards();
                 user.addDealerCards(dealerCard_2);
-                //return the sum of player's cards
                 int playerSum = user.sumPlayerCards();
+                int dealerSum = user.sumDealerCards();
+                int dealerHideSum = user.dealerHide();
                 int bidding = Integer.parseInt(requestAsArray[2]);
         		user.setBidding(bidding);
         		int balance = user.getBalance() - bidding; 
         		user.setBalance(balance);
-        		gameResult = playerCard_1+"|"+playerCard_2+"|"+dealerCard_2+"|"+playerSum;
+        		gameResult = playerCard_1+"|"+playerCard_2+"|"+dealerCard_1+"|"+dealerCard_2+"|"+playerSum+"|"+dealerSum+"|"+dealerHideSum;
+        		if(playerSum==21 && dealerSum!=21)
+        		{
+        			user.setInGameState(false);
+        			user.resetDeck();
+        			user.setBalance(user.getBalance() + 3*user.getBidding());
+    			    user.setBidding(0);
+        		}
+        		else if(playerSum==21 && dealerSum==21)
+        		{
+        			user.setInGameState(false);
+        			user.resetDeck();
+        			user.setBalance(user.getBalance() + user.getBidding());
+    			    user.setBidding(0);  
+        		}
+        		else if(playerSum!=21 && dealerSum==21)
+        		{
+        			user.setInGameState(false);
+        			user.resetDeck();
+        			if(user.getBalance() > user.getBidding())
+        			{
+        				user.setBalance(user.getBalance() - user.getBidding());
+        			}
+        			else
+        			{
+        				user.setBalance(0);
+        			}
+    			    user.setBidding(0);
+        		}
             }
             //Press 'hit', player draws a card.
             else if(requestAsArray[0].equals("hit"))
             {
-            	String card = user.dealCards();
-    			user.addPlayerCards(card);
-    			int sum = user.sumPlayerCards();
+            	String addCard = user.dealCards();
+    			user.addPlayerCards(addCard);
+    			int playerSum = user.sumPlayerCards();
+    			int dealerSum = user.sumDealerCards();
     			int count = user.countPlayerCards();
-    			if(sum > 21)
+    			if(playerSum > 21)
     			{
     				user.setInGameState(false);
+    				user.setBidding(0);
+    				user.resetDeck();
     				ArrayList<String> dealerCards = user.getDealerCards();
     				String dealerCard_1 = dealerCards.get(0);
-    				gameResult = card + "|" + sum + "|" + count + "|" + dealerCard_1;
+    				gameResult = addCard + "|" + playerSum + "|" + count + "|" + dealerSum + "|" + dealerCard_1;
     			}
     			else
     			{
     				if(count < 6)
     				{
-    					gameResult = card + "|" + sum + "|" + count;
+    					gameResult = addCard + "|" + playerSum + "|" + count;
     				}
     				else
     				{
-    					//6 charlie! Player wins.
     					user.setInGameState(false);
-    					int bidding = user.getBidding();
-    	            	int balance = user.getBalance();
-    	            	user.setBalance(balance + 2*bidding);
-    	            	int newBalance = user.getBalance();
+    	            	user.setBalance(user.getBalance() + 2*user.getBidding());
+    	            	user.setBidding(0);
+    	            	user.resetDeck();
         				ArrayList<String> dealerCards = user.getDealerCards();
         				String dealerCard_1 = dealerCards.get(0);
-        				gameResult = card + "|" + sum + "|" + count + "|" + dealerCard_1 + "|" + newBalance;
+        				gameResult = addCard + "|" + playerSum + "|" + count + "|" + dealerSum + "|" + dealerCard_1;
     				}
     			}
             }
-            //Press 'stand', showdown.
+            //Press 'stand'. Showdown! Dealer must stand on 17 and draw to 16.
             else if(requestAsArray[0].equals("stand"))
             {
             	int playerSum = user.sumPlayerCards();
             	int dealerSum = user.sumDealerCards();
             	int bidding = user.getBidding();
             	int balance = user.getBalance();
-            	ArrayList<String> dealerCards = user.getDealerCards();
-            	String dealerCard1 = dealerCards.get(0);
-            	//if dealer overwhelms player with 2 cards, dealer wins
-            	if(dealerSum > playerSum)
-    			{
-            		gameResult = "lose" + "|" + dealerCard1;
-    			}
-            	//if dealer matches player with 2 cards
-            	else if (dealerSum == playerSum)
-            	{
-            		//if sum of dealer's cards was smaller than 14, ask for 1 more card, dealer has 3 cards now
-    				if(dealerSum <= 13)
-    				{
-    					String addedCard_1 = user.dealCards();
-        				user.addDealerCards(addedCard_1);
-        				dealerSum = user.sumDealerCards();
-        				//dealer busts with 3 cards, player wins
-        				if(dealerSum > 21)
-        				{
-        					gameResult = "win" + "|" + dealerCard1 + "|" + addedCard_1;
-        					user.setBalance(balance + 2*bidding);
-        				}
-        				//dealer doesn't bust with 3 cards, dealer wins
-        				else
-        				{
-        					gameResult = "lose" + "|" + dealerCard1 + "|" + addedCard_1;
-        				}
-    				}
-    				//if sum of dealer's cards was larger than 14, tie game
-    				else
-    				{
-    					gameResult = "tie" + "|" + dealerCard1;
-    					user.setBalance(balance + bidding);
-    				}
-            	}
-            	//if player overwhelms dealer, dealer asks for 1 more card, dealer has 3 cards now
-            	else
-            	{
-            		String addedCard_1 = user.dealCards();
-    				user.addDealerCards(addedCard_1);
+            	int count = 2;
+                while(dealerSum < 17 && count < 6)
+                {
+            		String addedCard = user.dealCards();
+    				user.addDealerCards(addedCard);
     				dealerSum = user.sumDealerCards();
-    				//dealer busts with 3 cards, player wins
-    				if(dealerSum > 21)
-    				{
-    					gameResult = "win" + "|" + dealerCard1 + "|" + addedCard_1;
-    					user.setBalance(balance + 2*bidding);
-    				}
-    				//dealer doesn't bust with 3 cards
-    				else
-    				{
-    					//dealer overwhelms player with 3 cards, dealer wins
-    					if(dealerSum > playerSum)
-    					{
-    						gameResult = "lose" + "|" + dealerCard1 + "|" + addedCard_1;
-    					}
-    					//if dealer matches player with 3 cards
-    					else if(dealerSum == playerSum)
-    					{
-    						//dealer asks for the 4th card
-    						if(dealerSum <= 13)
-            				{
-            					String addedCard_2 = user.dealCards();
-                				user.addDealerCards(addedCard_2);
-                				dealerSum = user.sumDealerCards();
-                				//dealer busts with 4 cards, player wins
-                				if(dealerSum > 21)
-                				{
-                					gameResult = "win" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2;
-                					user.setBalance(balance + 2*bidding);
-                				}
-                				//dealer dosen't bust with 4 cards, dealer wins
-                				else
-                				{
-                					gameResult = "lose" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2;
-                				}
-            				}
-    						//tie game
-            				else
-            				{
-            					gameResult = "tie" + "|" + dealerCard1 + "|" + addedCard_1;
-            					user.setBalance(balance + bidding);
-            				}
-    					}
-    					//player still overwhelms dealer, dealer asks for the 4th card
-    					else
-    					{
-    						String addedCard_2 = user.dealCards();
-            				user.addDealerCards(addedCard_2);
-            				dealerSum = user.sumDealerCards();
-            				//dealer busts, player wins
-            				if(dealerSum > 21)
-            				{
-            					gameResult = "win" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2;
-            					user.setBalance(balance + 2*bidding);
-            				}
-            				//dealer doesn't bust
-            				else
-            				{
-            					//dealer overwhelms player with 4 cards, dealer wins
-            					if(dealerSum > playerSum)
-            					{
-            						gameResult = "lose" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2;
-            					}
-            					//dealer matches player with 4 cards
-            					else if(dealerSum == playerSum)
-            					{
-            						//dealer asks for the 5th card
-            						if(dealerSum <= 13)
-            						{
-            							String addedCard_3 = user.dealCards();
-                        				user.addDealerCards(addedCard_3);
-                        				dealerSum = user.sumDealerCards();
-                        				//dealer busts with 5 cards, player wins
-                        				if(dealerSum > 21)
-                        				{
-                        					gameResult = "win" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                        					user.setBalance(balance + 2*bidding);
-                        				}
-                        				//dealer doesn't bust with 5 cards, dealer wins
-                        				else
-                        				{
-                        					gameResult = "lose" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                        				}
-            						}
-            						//tie game
-            						else
-            						{
-            							gameResult = "tie" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2;
-            							user.setBalance(balance + bidding);
-            						}
-            					}
-            					//player still overwhelms dealer, dealer asks for the 5th card
-            					else
-            					{
-            						String addedCard_3 = user.dealCards();
-                    				user.addDealerCards(addedCard_3);
-                    				dealerSum = user.sumDealerCards();
-                    				//dealer bust with 5 cards, player wins
-                    				if(dealerSum > 21)
-                    				{
-                    					gameResult = "win" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                    					user.setBalance(balance + 2*bidding);
-                    				}
-                    				//dealer doesn't bust with 5 cards
-                    				else
-                    				{ 
-                    					if(dealerSum > playerSum)
-                    					{
-                    						gameResult = "lose" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                    					}
-                    					else if(dealerSum == playerSum)
-                    					{
-                    						gameResult = "tie" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                    						user.setBalance(balance + bidding);
-                    					}
-                    					else
-                    					{
-                    						gameResult = "win" + "|" + dealerCard1 + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                    						user.setBalance(balance + 2*bidding);
-                    					}
-                    				}
-            					}
-            				}
-    					}
-    				}
+    				count += 1;
+                }
+                if(dealerSum > 21)
+                {
+                	user.setBalance(balance + 2*bidding);
+                }
+                else
+                {
+                	if(count == 6)
+                	{
+                		user.setBalance(balance + 2*bidding);
+                	}
+                	else
+                	{
+                		if(dealerSum > playerSum)
+                		{
+                		}
+                		else if(dealerSum == playerSum)
+                		{
+                    		user.setBalance(balance + bidding);
+                		}
+                		else
+                		{
+                			user.setBalance(balance + 2*bidding);
+                		}
+                	}
+                }
+                ArrayList<String> dealerCards = user.getDealerCards();
+                String cardsStr = "";
+                for(String dealerCard: dealerCards)
+            	{
+            		cardsStr = cardsStr + "|" + dealerCard;
             	}
-            	user.setInGameState(false);
-            	user.resetDeck();
+                gameResult = playerSum + "|" + dealerSum + "|" + count + cardsStr;
+                user.setInGameState(false);
+                user.setBidding(0);
+            	user.resetDeck(); 
             }
-            //press 'double', player gets 1 more cards, then showdown
+            //Press 'double', player doubles the bidding and gets 1 more cards. Showdown!
             else if(requestAsArray[0].equals("double"))
             {
-            	int bidding = user.getBidding() * 2;
             	int balance = user.getBalance() - user.getBidding();
+            	int bidding = user.getBidding() * 2;
             	user.setBalance(balance);
             	user.setBidding(bidding);
             	String playerAddCard = user.dealCards();
             	user.addPlayerCards(playerAddCard);
             	int playerSum = user.sumPlayerCards();
             	int dealerSum = user.sumDealerCards();
-            	//player busts, dealer wins
+            	int count = 2;
             	if(playerSum > 21)
             	{
-            		gameResult = "lose" + "|" + playerAddCard;
+            		String dealerCard_1 = user.getDealerCards().get(0);
+            		gameResult = playerAddCard + "|" + playerSum + "|" + dealerSum + "|" + count + "|" + dealerCard_1;
             	}
-            	//player doesn't bust, dealer follows the same strategy as 'stand'
             	else
             	{
-            		//if dealer overwhelms player with 2 cards, dealer wins
-	            	if(dealerSum > playerSum)
-        			{
-	            		gameResult = "lose" + "|" + playerAddCard;
-        			}
-	            	//if dealer matches player with 2 cards
-	            	else if (dealerSum == playerSum)
-	            	{
-	            		//if sum of dealer's cards was smaller than 14, ask for 1 more card, dealer has 3 cards now
-        				if(dealerSum <= 13)
-        				{
-        					String addedCard_1 = user.dealCards();
-            				user.addDealerCards(addedCard_1);
-            				dealerSum = user.sumDealerCards();
-            				//dealer busts with 3 cards, player wins
-            				if(dealerSum > 21)
-            				{
-            					gameResult = "win" + "|" + playerAddCard + "|" + addedCard_1;
-            					user.setBalance(balance + 2*bidding);
-            				}
-            				//dealer doesn't bust with 3 cards, dealer wins
-            				else
-            				{
-            					gameResult = "lose" + "|" + playerAddCard + "|" + addedCard_1;
-            				}
-        				}
-        				//if sum of dealer's cards was larger than 14, tie game
-        				else
-        				{
-        					gameResult = "tie";
-        					user.setBalance(balance + bidding);
-        				}
-	            	}
-	            	//if player overwhelms dealer, dealer asks for 1 more card, dealer has 3 cards now
-	            	else
-	            	{
-	            		String addedCard_1 = user.dealCards();
-        				user.addDealerCards(addedCard_1);
+            		while(dealerSum < 17 && count < 6)
+                    {
+                		String addedCard = user.dealCards();
+        				user.addDealerCards(addedCard);
         				dealerSum = user.sumDealerCards();
-        				//dealer busts with 3 cards, player wins
-        				if(dealerSum > 21)
-        				{
-        					gameResult = "win" + "|" + playerAddCard + "|" + addedCard_1;
-        					user.setBalance(balance + 2*bidding);
-        				}
-        				//dealer doesn't bust with 3 cards
-        				else
-        				{
-        					//dealer overwhelms player with 3 cards, dealer wins
-        					if(dealerSum > playerSum)
-        					{
-        						gameResult = "lose" + "|" + playerAddCard + "|" + addedCard_1;
-        					}
-        					//if dealer matches player with 3 cards
-        					else if(dealerSum == playerSum)
-        					{
-        						//dealer asks for the 4th card
-        						if(dealerSum <= 13)
-                				{
-                					String addedCard_2 = user.dealCards();
-                    				user.addDealerCards(addedCard_2);
-                    				dealerSum = user.sumDealerCards();
-                    				//dealer busts with 4 cards, player wins
-                    				if(dealerSum > 21)
-                    				{
-                    					gameResult = "win" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2;
-                    					user.setBalance(balance + 2*bidding);
-                    				}
-                    				//dealer dosen't bust with 4 cards, dealer wins
-                    				else
-                    				{
-                    					gameResult = "lose" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2;
-                    				}
-                				}
-        						//tie game
-                				else
-                				{
-                					gameResult = "tie" + "|" + playerAddCard + "|" + addedCard_1;
-                					user.setBalance(balance + bidding);
-                				}
-        					}
-        					//player still overwhelms dealer, dealer asks for the 4th card
-        					else
-        					{
-        						String addedCard_2 = user.dealCards();
-                				user.addDealerCards(addedCard_2);
-                				dealerSum = user.sumDealerCards();
-                				//dealer busts, player wins
-                				if(dealerSum > 21)
-                				{
-                					gameResult = "win" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2;
-                					user.setBalance(balance + 2*bidding);
-                				}
-                				//dealer doesn't bust
-                				else
-                				{
-                					//dealer overwhelms player with 4 cards, dealer wins
-                					if(dealerSum > playerSum)
-                					{
-                						gameResult = "lose" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2;
-                					}
-                					//dealer matches player with 4 cards
-                					else if(dealerSum == playerSum)
-                					{
-                						//dealer asks for the 5th card
-                						if(dealerSum <= 13)
-                						{
-                							String addedCard_3 = user.dealCards();
-                            				user.addDealerCards(addedCard_3);
-                            				dealerSum = user.sumDealerCards();
-                            				//dealer busts with 5 cards, player wins
-                            				if(dealerSum > 21)
-                            				{
-                            					gameResult = "win" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                            					user.setBalance(balance + 2*bidding);
-                            				}
-                            				//dealer doesn't bust with 5 cards, dealer wins
-                            				else
-                            				{
-                            					gameResult = "lose" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                            				}
-                						}
-                						//tie game
-                						else
-                						{
-                							gameResult = "tie" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2;
-                							user.setBalance(balance + bidding);
-                						}
-                					}
-                					//player still overwhelms dealer, dealer asks for the 5th card
-                					else
-                					{
-                						String addedCard_3 = user.dealCards();
-                        				user.addDealerCards(addedCard_3);
-                        				dealerSum = user.sumDealerCards();
-                        				//dealer bust with 5 cards, player wins
-                        				if(dealerSum > 21)
-                        				{
-                        					gameResult = "win" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                        					user.setBalance(balance + 2*bidding);
-                        				}
-                        				//dealer doesn't bust with 5 cards
-                        				else
-                        				{ 
-                        					if(dealerSum > playerSum)
-                        					{
-                        						gameResult = "lose" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                        					}
-                        					else if(dealerSum == playerSum)
-                        					{
-                        						gameResult = "tie" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                        						user.setBalance(balance + bidding);
-                        					}
-                        					else
-                        					{
-                        						gameResult = "win" + "|" + playerAddCard + "|" + addedCard_1 + "|" + addedCard_2 + "|" + addedCard_3;
-                        						user.setBalance(balance + 2*bidding);
-                        					}
-                        				}
-                					}
-                				}
-        					}
-        				}
-	            	}
+        				count += 1;
+                    }
+            		if(dealerSum > 21)
+                    {
+                    	user.setBalance(balance + 2*bidding);
+                    }
+                    else
+                    {
+                    	if(count == 6)
+                    	{
+                    		user.setBalance(balance + 2*bidding);
+                    	}
+                    	else
+                    	{
+                    		if(dealerSum > playerSum)
+                    		{
+                    		}
+                    		else if(dealerSum == playerSum)
+                    		{
+                        		user.setBalance(balance + bidding);
+                    		}
+                    		else
+                    		{
+                        		user.setBalance(balance + 2*bidding);
+                    		}
+                    	}
+                    }
+            		ArrayList<String> dealerCards = user.getDealerCards();
+                    String cardsStr = "";
+                    for(String dealerCard: dealerCards)
+                	{
+                		cardsStr = cardsStr + "|" + dealerCard;
+                	}
+                    gameResult = playerAddCard + "|" + playerSum + "|" + dealerSum + "|" + count + cardsStr;
             	}
             	user.setInGameState(false);
+            	user.setBidding(0);
             	user.resetDeck();
             }
+            
             try
             {
                 ObjectOutputStream outputFile = new ObjectOutputStream(new FileOutputStream(userFilePath));

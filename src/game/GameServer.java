@@ -16,41 +16,55 @@ import implement.Node;
   */
 
 public class GameServer {
-		private Node node;
-		private int port;
-		
-		public GameServer(Node n,int port) {
-			node = n;
-			this.port = port;
-		}
-		
-	    public void launch() throws IOException
-	    {
-	    	ServerSocket server = new ServerSocket(port);
-	    	Socket client = server.accept();
-	    	try
-		    {
-	    		new Thread(new Runnable() {
-	    			public void run() {
-	    				try {
-	    			    	PrintStream outPut = new PrintStream(client.getOutputStream());
-	    			        BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream()));
-	    			        String request = br.readLine();
-	    			        System.out.println(request);
-	    			        String gameResult= node.handleRequest(request);
-	    		            outPut.println(gameResult);
-	    				}catch(IOException e) {
-	    					e.printStackTrace();
-	    				}
-	    			}
-	    		}).start();	
+	private Node node;
+	private int port;
 
-		    }
-		    catch(Exception e)
-	        {
-	            e.printStackTrace();
-	        }   
-	        
-	    }
+	public GameServer(Node n, int port) {
+		node = n;
+		this.port = port;
+	}
+
+	public void launch() throws IOException {
+
+		ServerSocket server = new ServerSocket(port);
+		Thread thread = new Thread() {
+			public void run() {
+				while (true) {
+					try {
+						Socket client = server.accept();
+						new ServerThread(client).execute();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		};
+		thread.start();
+	}
+
+	class ServerThread implements Runnable {
+		private Socket client;
+
+		public ServerThread(Socket client) {
+			this.client = client;
+		}
+
+		public void execute() {
+			try {
+				PrintStream outPut = new PrintStream(client.getOutputStream());
+				BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream()));
+				String request = br.readLine();
+				String gameResult = node.handleRequest(request);
+				outPut.println(gameResult);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		public void run() {
+			execute();
+		}
+	}
+
 }
 

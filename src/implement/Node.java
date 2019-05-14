@@ -453,7 +453,6 @@ public class Node implements NodeInterf {
 		Future f = ReplicationExecutor.submit(new LogReplication(new Entry(currentTerm, command)));
 		try {
 			result = (boolean) f.get();
-			System.out.println(result);
 		} catch (InterruptedException | ExecutionException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -563,7 +562,6 @@ public class Node implements NodeInterf {
 
 			AtomicInteger success = new AtomicInteger(0); // store the number of granted replies
 			CountDownLatch latch = new CountDownLatch(futureList.size());
-			System.out.println(futureList.size());
 
 			// waiting for the replies
 			for (Future future : futureList) {
@@ -608,7 +606,7 @@ public class Node implements NodeInterf {
 
 			// reinitialize the nextIndex and matchIndex
 			if (appendSuccess >= peerList.peerAmount() / 2) {
-				LOG.info(name + ": now I will commit");
+				LOG.info(name + ": Most of the followers have appended the log, now I will commit");
 				commitIndex = log.getLastLogIndex();
 				lastApplied = commitIndex;
 				return true;
