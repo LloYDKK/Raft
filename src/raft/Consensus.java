@@ -1,5 +1,6 @@
 package raft;
 
+import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.logging.Logger;
@@ -7,6 +8,7 @@ import java.util.logging.Logger;
 import entities.AppendEntryPar;
 import entities.AppendEntryRes;
 import entities.Entry;
+import entities.PeerList;
 import entities.RequestVotePar;
 import entities.RequestVoteRes;
 import entities.Status;
@@ -43,7 +45,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if (candidTerm < currentTerm) {
-			LOG.info("Election: term < currentTerm!");
+			LOG.info(node.getName()+": Respond Election: term < currentTerm!");
 			return new RequestVoteRes(currentTerm,false);
 		}
 		
@@ -53,7 +55,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		if ((node.getVotedFor().equals("") || node.getVotedFor().equals(candidID))
 			 && nodeLogIndex <= candidLogIndex
 		     && nodeLogTerm <= candidLogTerm){
-			LOG.info("vote for: "+ candidID);
+			LOG.info(node.getName()+": vote for "+ candidID);
 			node.setStatus(Status.FOLLOWER);
 			node.setLeader(candidID);
 			node.setVotedFor(candidID);
@@ -74,6 +76,12 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		int prevLogTerm = param.getPreLogTerm();
 		Entry[] entries = param.getEntry();
 		int leaderCommit = param.getLeaderCommit();
+		PeerList peerList = param.getPeerList();
+		
+		// renew the peerlist
+		if(peerList.peerAmount() > node.getPeerList().peerAmount()) {
+			node.setPeerList(peerList);
+		}
 		
 		// status for the current node
 		int currentTerm = node.getCurrentTerm();
@@ -81,7 +89,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		
 		// Reply false if term < currentTerm (¡ì5.1)
 		if(leaderTerm<currentTerm) {
-			LOG.info("Append Entry: term < currentTerm!");
+			LOG.info(node.getName()+": Respond Append Entry: term < currentTerm!");
 			return new AppendEntryRes(currentTerm,false);
 		}
 		
@@ -93,13 +101,13 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		
 		// receive heartbeat
 		if(entries.length == 0) {
-			LOG.info("receive heartbeat from leader");
+			LOG.info(node.getName()+": receive heartbeat from leader");
 			return new AppendEntryRes(currentTerm,true);
 		}
 		
 		// Reply false if log doesn¡¯t contain an entry at prevLogIndex whose term matches prevLogTerm
 		if(node.logEntryTerm(prevLogIndex) != -1 && node.logEntryTerm(prevLogIndex)!=prevLogTerm) {
-			LOG.info("log doesn¡¯t contain an entry at prevLogIndex!");
+			LOG.info(node.getName()+": log doesn¡¯t contain an entry at prevLogIndex!");
 			return new AppendEntryRes(currentTerm,false);
 		}
 		
@@ -144,6 +152,17 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		}
 		
 		return new AppendEntryRes(currentTerm,true);
+	}
+
+	@Override
+	public String addPeer(String address) throws RemoteException {
+		// TODO Auto-generated method stub
+		if(node.isLeader() && node.getPeerList().getPeer(address)==null) {
+			String[] addr = address.split(":");
+			node.getPeerList().addPeer(address, new InetSocketAddress(addr[0],Integer.parseInt(addr[1])));
+			return "done";
+		}
+		return node.getLeader();
 	}
 	
 }

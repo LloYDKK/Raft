@@ -20,6 +20,7 @@ public class raftTest {
 		PeerList peerList = new PeerList();
 		peerList.addPeer("10.12.22.176:8081", new InetSocketAddress("10.12.22.176",8081));
 		peerList.addPeer("10.12.22.176:8082", new InetSocketAddress("10.12.22.176",8082));
+		//peerList.addPeer("10.12.230.17:8086", new InetSocketAddress("10.12.230.17",8086));
 		peerList.addPeer("10.12.22.176:8083", new InetSocketAddress("10.12.22.176",8083));
 		
 		Node n1 = new Node(8081,peerList,8881);
@@ -66,8 +67,8 @@ public class raftTest {
 					while(username<200) {
 					Thread.sleep(10000);
 					System.out.println(n1.handleRequest("register|"+username+"|222|333"));
-					System.out.println(n2.handleRequest("register|"+username+"|222|333"));
-					System.out.println(n3.handleRequest("register|"+username+"|222|333"));
+					//System.out.println(n2.handleRequest("register|"+username+"|222|333"));
+					//System.out.println(n3.handleRequest("register|"+username+"|222|333"));
 					username += 1;
 					}
 				} catch (InterruptedException e) {

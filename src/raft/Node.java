@@ -143,6 +143,10 @@ public class Node implements NodeInterf {
 		}
 		return false;
 	}
+	
+	public PeerList getPeerList() {
+		return peerList;
+	}
 
 	public String getLeader() {
 		return peerList.getLeader();
@@ -150,6 +154,10 @@ public class Node implements NodeInterf {
 	
 	public int getLastApplied() {
 		return lastApplied;
+	}
+	
+	public void setPeerList(PeerList peerList) {
+		this.peerList = peerList;
 	}
 
 	/* log opeator */
@@ -210,6 +218,40 @@ public class Node implements NodeInterf {
 			}
 		}).start();
 
+		// join the peerList
+		ArrayList<InetSocketAddress> peers = peerList.allPeers(name);
+	
+		RPCExecutor.submit(new Runnable() {
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				try {
+					String response = "";
+					InetSocketAddress peer = peers.get(0);
+					String [] addr = null;
+					// if the peer is not the leader, retry adding self to the leader
+					while (!response.equals("done")) {
+						Registry registry = LocateRegistry.getRegistry(peer.getHostName(), peer.getPort());
+						ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
+						response = consensus1.addPeer(name);
+						if(!response.equals("done")) {
+							addr = response.split(":");
+						}
+						peer = new InetSocketAddress(addr[0], Integer.parseInt(addr[1]));
+					}
+
+				} catch (RemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (NotBoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		});
+		
 		while (running) {
 			electExecutor.submit(new Elect());
 			hbExecutor.submit(new HeartBeat());
@@ -386,7 +428,7 @@ public class Node implements NodeInterf {
 							AppendEntryPar.Builder builder = new AppendEntryPar.Builder();
 
 							AppendEntryPar heartbeat = builder.leaderId(name).entries(new Entry[0]).term(currentTerm)
-									.preLogIndex(0).preLogTerm(0).leaderCommit(0).build();
+									.preLogIndex(0).preLogTerm(0).leaderCommit(0).peerList(peerList).build();
 
 							Registry registry = LocateRegistry.getRegistry(peer.getHostName(), peer.getPort());
 							ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
@@ -531,7 +573,7 @@ public class Node implements NodeInterf {
 							
 							AppendEntryPar param = builder.term(currentTerm).leaderId(name).preLogIndex(preLogIndex)
 									.preLogTerm(logToReplicated.get(0).getEntryTerm())
-									.entries(logToReplicated.toArray(new Entry[0])).leaderCommit(commitIndex).build();
+									.entries(logToReplicated.toArray(new Entry[0])).leaderCommit(commitIndex).peerList(peerList).build();
 							
 							LOG.info(name+" :replicate log on "+peer.getPort());
 							

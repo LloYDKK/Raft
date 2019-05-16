@@ -13,7 +13,8 @@ public class AppendEntryPar implements Serializable{
 	private int preLogIndex; // index of log entry immediately preceding new ones
 	private int preLogTerm; // term of prevLogIndex entry
 	private Entry[] entries; // log entries(empty for heartbeat)
-	private int leaderCommit; //leader's commitIndex
+	private int leaderCommit; // leader's commitIndex
+	private PeerList peerList; // store the addresses of all the peers
 	
 	public int getTerm() {
 		return term;
@@ -35,6 +36,10 @@ public class AppendEntryPar implements Serializable{
 		return leaderCommit;
 	}
 	
+	public PeerList getPeerList() {
+		return peerList;
+	}
+	
 	private AppendEntryPar(Builder builder) {
 		this.term = builder.term;
 		this.leaderId = builder.leaderId;
@@ -42,6 +47,7 @@ public class AppendEntryPar implements Serializable{
 		this.preLogTerm = builder.preLogTerm;
 		this.entries = builder.entries;
 		this.leaderCommit = builder.leaderCommit;
+		this.peerList = builder.peerList;
 	}
 	
 	public static final class Builder{
@@ -51,6 +57,7 @@ public class AppendEntryPar implements Serializable{
 		private int preLogTerm;
 		private Entry[] entries;
 		private int leaderCommit;
+		private PeerList peerList;
 		
 		public Builder term(int t) {
 			term = t;
@@ -79,6 +86,11 @@ public class AppendEntryPar implements Serializable{
 		
 		public Builder leaderCommit(int t) {
 			leaderCommit = t;
+			return this;
+		}
+		
+		public Builder peerList(PeerList t) {
+			peerList = t;
 			return this;
 		}
 		

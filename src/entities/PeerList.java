@@ -1,5 +1,6 @@
 package entities;
 
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,7 +12,7 @@ import java.util.Map;
   */
 
 // store all the peers and their addresses
-public class PeerList {
+public class PeerList implements Serializable{
 	private Map<String,InetSocketAddress> peerList;
 	private String leaderID = "";
 	
