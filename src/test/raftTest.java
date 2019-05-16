@@ -2,9 +2,10 @@ package test;
 
 import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
+import java.util.Locale;
 
 import entities.PeerList;
-import implement.Node;
+import raft.Node;
 
 /**
   * @author Kuan Tian
@@ -15,6 +16,7 @@ import implement.Node;
 // need to change the address to local address first
 public class raftTest {
 	public static void main(String[] args) {
+		Locale.setDefault(new Locale("en", "EN"));
 		PeerList peerList = new PeerList();
 		peerList.addPeer("10.12.22.176:8081", new InetSocketAddress("10.12.22.176",8081));
 		peerList.addPeer("10.12.22.176:8082", new InetSocketAddress("10.12.22.176",8082));

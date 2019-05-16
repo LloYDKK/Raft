@@ -7,7 +7,7 @@ import java.rmi.AlreadyBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
-import implement.Node;
+import raft.Node;
 
 
 /**
@@ -27,42 +27,44 @@ public class GameServer {
 	public void launch() throws IOException {
 
 		ServerSocket server = new ServerSocket(port);
-		Thread thread = new Thread() {
-			public void run() {
-				while (true) {
-					try {
-						Socket client = server.accept();
-						new ServerThread(client).execute();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		};
-		thread.start();
-	}
-
-	class ServerThread implements Runnable {
-		private Socket client;
-
-		public ServerThread(Socket client) {
-			this.client = client;
-		}
-
-		public void execute() {
+		while (true) {
 			try {
-				PrintStream outPut = new PrintStream(client.getOutputStream());
-				BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream()));
-				String request = br.readLine();
-				String gameResult = node.handleRequest(request);
-				outPut.println(gameResult);
-			} catch (Exception e) {
+				Socket client = server.accept();
+				new ServerThread(client);
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	class ServerThread extends Thread {
+		private Socket client;
+		PrintStream outPut;
+		BufferedReader br;
+
+		public ServerThread(Socket c) {
+			client = c;
+			try {
+				outPut = new PrintStream(client.getOutputStream());
+				br = new BufferedReader(new InputStreamReader(client.getInputStream()));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			start();
+
+		}
 
 		public void run() {
-			execute();
+			while (true) {
+				try {
+					String request = br.readLine();
+					String gameResult = node.handleRequest(request);
+					outPut.println(gameResult);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 

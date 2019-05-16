@@ -1,4 +1,4 @@
-package implement;
+package raft;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -31,8 +31,8 @@ import entities.RequestVotePar;
 import entities.RequestVoteRes;
 import entities.Status;
 import game.GameServer;
-import raft.ConsensusInterf;
-import raft.NodeInterf;
+import interfaces.ConsensusInterf;
+import interfaces.NodeInterf;
 
 /**
  * @author Kuan Tian 
@@ -147,6 +147,10 @@ public class Node implements NodeInterf {
 	public String getLeader() {
 		return peerList.getLeader();
 	}
+	
+	public int getLastApplied() {
+		return lastApplied;
+	}
 
 	/* log opeator */
 	public int lastLogIndex() {
@@ -219,8 +223,9 @@ public class Node implements NodeInterf {
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
-			if (status == Status.LEADER)
+			if (status == Status.LEADER) {
 				return; // if self status is leader, don't need to elect
+			}
 
 			receiveFromLeader = false;
 
@@ -292,20 +297,23 @@ public class Node implements NodeInterf {
 						// TODO Auto-generated method stub
 						try {
 							RequestVoteRes response = (RequestVoteRes) future.get(3, TimeUnit.SECONDS);
-							if (response == null)
+							if (response == null) {
 								return -1;
+							}
 
 							boolean granted = response.getGranted();
 
 							// increment the number of granted node
-							if (granted)
+							if (granted) {
 								success.incrementAndGet();
+							}
 
 							// update the current term
 							else {
 								int term = response.getTerm();
-								if (term >= getCurrentTerm())
+								if (term >= getCurrentTerm()) {
 									setCurrentTerm(term);
+								}
 							}
 							return 0;
 						} catch (Exception e) {
@@ -513,8 +521,9 @@ public class Node implements NodeInterf {
 								preLogIndex = peerEntryIndex;
 								for (int i = peerEntryIndex; i <= entryIndex; i++) {
 									Entry e = log.getEntry(i);
-									if (e != null)
+									if (e != null) {
 										logToReplicated.add(e);
+									}
 								}
 							} else{
 								logToReplicated.add(log.getEntry(entryIndex));
@@ -603,7 +612,25 @@ public class Node implements NodeInterf {
 			int appendSuccess = success.get();
 
 			LOG.info(name + " the number of append success number is: " + appendSuccess);
-
+			
+			
+			/* If there exists an N such that N > commitIndex, 
+			 * a majority of matchIndex[i] ¡Ý N, 
+			 * and log[N].term == currentTerm: 
+			 * set commitIndex = N (¡ì5.3, ¡ì5.4).
+			 */
+			int majority = 0;
+			for(InetSocketAddress peer : peers) { 
+				majority += matchIndex.get(peer);
+			}
+			majority /= matchIndex.size();
+			
+			for(int N = commitIndex;N<=majority;N++) {
+				if(log.getEntryTerm(N) == currentTerm) {
+					commitIndex = N;
+				}
+			}
+			
 			// reinitialize the nextIndex and matchIndex
 			if (appendSuccess >= peerList.peerAmount() / 2) {
 				LOG.info(name + ": Most of the followers have appended the log, now I will commit");

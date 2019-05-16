@@ -1,4 +1,4 @@
-package raft;
+package interfaces;
 
 import java.rmi.RemoteException;
 

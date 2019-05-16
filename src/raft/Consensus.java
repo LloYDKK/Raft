@@ -1,4 +1,4 @@
-package implement;
+package raft;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -10,7 +10,7 @@ import entities.Entry;
 import entities.RequestVotePar;
 import entities.RequestVoteRes;
 import entities.Status;
-import raft.ConsensusInterf;
+import interfaces.ConsensusInterf;
 
 /**
   * @author Kuan Tian
@@ -121,6 +121,26 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		if(leaderCommit > node.getCommitIndex()) {
 			int i = (int) Math.min(leaderCommit, node.lastLogIndex());
 			node.setCommitIndex(i);
+		}
+		
+		// apply the command to the state machine if lastApplied < commitIndex
+		if(node.getCommitIndex()>node.getLastApplied()) {
+			Thread t1 = new Thread();
+			try {
+				t1 = new Thread(new Runnable() {
+					@Override
+					public void run() {
+						// TODO Auto-generated method stub
+						for(int i = node.getLastApplied();i<=node.getCommitIndex();i++) {
+							node.executeStateMachine(node.logEntryCommand(i));
+						}
+					}
+					
+				});
+				t1.start();
+			}finally {
+				t1.interrupt();
+			}
 		}
 		
 		return new AppendEntryRes(currentTerm,true);
