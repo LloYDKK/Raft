@@ -20,22 +20,27 @@ public class PeerList implements Serializable{
 		peerList = new HashMap<String,InetSocketAddress>();
 	}
 	
+	// update the leader's address
 	public void setLeader(String leaderID) {
 		this.leaderID = leaderID;
 	}
 	
+	// add a new peer to the list
 	public void addPeer(String name, InetSocketAddress addr) {
 		peerList.put(name, addr);
 	}
 	
+	// get the peer's address
 	public InetSocketAddress getPeer(String name) {
 		return peerList.get(name);
 	}
 	
+	// return the amount of the peers
 	public int peerAmount() {
 		return peerList.size();
 	}
 	
+	// given a peer, return all the peers that aside from itself
 	public ArrayList<InetSocketAddress> allPeers(String name) {
 		ArrayList<InetSocketAddress> list = new ArrayList<InetSocketAddress>();
 		for (String key : peerList.keySet()) {
@@ -44,10 +49,12 @@ public class PeerList implements Serializable{
 		return list;
 	}
 	
+	// return the leader's address
 	public String getLeader() {
 		return leaderID;
 	}
 	
+	// remove a peer from the list
 	public void removePeer(String name) {
 		peerList.remove(name);
 	}

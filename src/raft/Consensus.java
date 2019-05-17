@@ -43,7 +43,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		int nodeLogTerm = node.lastLogTerm();
 		node.receiveFromLeader();
 		
-		// Reply false if term < currentTerm (¡ì5.1)
+		// Reply false if term < currentTerm
 		if (candidTerm < currentTerm) {
 			LOG.info(node.getName()+": Respond Election: term < currentTerm!");
 			return new RequestVoteRes(currentTerm,false);
@@ -55,7 +55,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		}
 		
 		/** If votedFor is null or candidateId, and candidate¡¯s log is at
-	      * least as up-to-date as receiver¡¯s log, grant vote (¡ì5.2, ¡ì5.4)
+	      * least as up-to-date as receiver¡¯s log, grant vote
 	      */ 
 		if ((node.getVotedFor().equals("") || node.getVotedFor().equals(candidID))
 			 && nodeLogIndex <= candidLogIndex
@@ -82,17 +82,12 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		Entry[] entries = param.getEntry();
 		int leaderCommit = param.getLeaderCommit();
 		PeerList peerList = param.getPeerList();
-		
-		// renew the peerlist
-		if(peerList.peerAmount() > node.getPeerAmount()) {
-			node.setPeerList(peerList);
-		}
-		
+
 		// status for the current node
 		int currentTerm = node.getCurrentTerm();
 		node.receiveFromLeader();
 		
-		// Reply false if term < currentTerm (¡ì5.1)
+		// Reply false if term < currentTerm
 		if(leaderTerm<currentTerm) {
 			LOG.info(node.getName()+": Respond Append Entry: term < currentTerm!");
 			return new AppendEntryRes(currentTerm,false);
@@ -102,6 +97,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		if(leaderTerm>=currentTerm) {
 			node.setStatus(Status.FOLLOWER);
 			node.setCurrentTerm(leaderTerm);
+			node.setPeerList(peerList);
 		}
 		
 		// receive heartbeat
@@ -118,7 +114,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		
 		/** If an existing entry conflicts with a new one (same index
 		  * but different terms), delete the existing entry and all that
-          * follow it (¡ì5.3)
+          * follow it
           */
 		if(node.logEntryTerm(prevLogIndex+1) != -1
 				&& node.logEntryTerm(prevLogIndex+1) != param.getEntry()[0].getEntryTerm()) {
@@ -135,29 +131,11 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 			node.setCommitIndex(i);
 		}
 		
-		// apply the command to the state machine if lastApplied < commitIndex
-		if(node.getCommitIndex()>node.getLastApplied()) {
-			Thread t1 = new Thread();
-			try {
-				t1 = new Thread(new Runnable() {
-					@Override
-					public void run() {
-						// TODO Auto-generated method stub
-						for(int i = node.getLastApplied();i<=node.getCommitIndex();i++) {
-							node.executeStateMachine(node.logEntryCommand(i));
-						}
-					}
-					
-				});
-				t1.start();
-			}finally {
-				t1.interrupt();
-			}
-		}
-		
 		return new AppendEntryRes(currentTerm,true);
 	}
 
+	// a new peer will run this method on one of the existing peer
+	// and get itself added to the list
 	@Override
 	public String addPeer(String address) throws RemoteException {
 		// TODO Auto-generated method stub

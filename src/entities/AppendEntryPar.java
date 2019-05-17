@@ -14,7 +14,7 @@ public class AppendEntryPar implements Serializable{
 	private int preLogTerm; // term of prevLogIndex entry
 	private Entry[] entries; // log entries(empty for heartbeat)
 	private int leaderCommit; // leader's commitIndex
-	private PeerList peerList; // store the addresses of all the peers
+	private PeerList peerList; // store the addresses of all the peers, used to renew the peerlist on each peers
 	
 	public int getTerm() {
 		return term;
@@ -40,6 +40,8 @@ public class AppendEntryPar implements Serializable{
 		return peerList;
 	}
 	
+	// implement a builder pattern for this class
+	// to make the init process more straight forward
 	private AppendEntryPar(Builder builder) {
 		this.term = builder.term;
 		this.leaderId = builder.leaderId;

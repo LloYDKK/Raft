@@ -36,6 +36,8 @@ public class RequestVotePar implements Serializable {
 		return lastLogTerm;
 	}
 	
+	// implement a builder pattern for this class
+	// to make the init process more straight forward
 	public static final class Builder{
 		private int term;
 		private String candidateId;

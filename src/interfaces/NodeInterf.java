@@ -12,5 +12,9 @@ import java.rmi.RemoteException;
  * requestvote RPC and appendEntry RPC */
 
 public interface NodeInterf {
-	public void init() throws RemoteException; // init the node
+	public void launch() throws RemoteException; // start the server
+	
+	public String executeStateMachine(String command); // run the stateMachine
+	
+	public String handleRequest(String command); // handle the requests from the client
 }

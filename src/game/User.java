@@ -128,8 +128,7 @@ public class User implements Serializable {
 		return count;
 	}
 
-	// Calculate the summary of player's cards. Ace = 1 or 11, 2-9 = 2-9, 10 J Q K =
-	// 10.
+	// calculate the summary of player's cards. Ace = 1 or 11, 2-9 = 2-9, 10 J Q K = 10
 	public int sumPlayerCards() {
 		int sum = 0;
 		int count = 0;
@@ -154,8 +153,7 @@ public class User implements Serializable {
 		return sum;
 	}
 
-	// Calculate the summary of dealer's cards. Ace = 1 or 11, 2-9 = 2-9, 10 J Q K =
-	// 10.
+	// calculate the summary of dealer's cards. Ace = 1 or 11, 2-9 = 2-9, 10 J Q K = 10
 	public int sumDealerCards() {
 		int sum = 0;
 		int count = 0;
@@ -179,7 +177,7 @@ public class User implements Serializable {
 		return sum;
 	}
 
-	// Return the point of dealer's second card.
+	// return the point of dealer's second card
 	public int dealerHide() {
 		String card2 = dealerCards.get(1);
 		String[] card2AsArray = card2.split("_");
@@ -234,6 +232,7 @@ public class User implements Serializable {
 		return this.deck;
 	}
 
+	// deal one card
 	public String dealCards() {
 		int index = (int) (Math.random() * this.deck.size());
 		String card = deck.get(index);

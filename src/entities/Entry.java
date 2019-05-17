@@ -8,6 +8,7 @@ import java.io.Serializable;
   */
 
 // store the entries as a tuple structure
+// each entry contains a term and command
 public class Entry implements Serializable{
 	private int term;
 	private String command;

@@ -3,12 +3,7 @@ package game;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.rmi.AlreadyBoundException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-
 import raft.Node;
-
 
 /**
   * @author Kuan Tian
@@ -19,6 +14,7 @@ public class GameServer {
 	private Node node;
 	private int port;
 
+	// implement a server using socket
 	public GameServer(Node n, int port) {
 		node = n;
 		this.port = port;
@@ -37,6 +33,7 @@ public class GameServer {
 		}
 	}
 
+	// implement multiple thread server to support multi-clients
 	class ServerThread extends Thread {
 		private Socket client;
 		PrintStream outPut;

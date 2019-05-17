@@ -39,23 +39,26 @@ import interfaces.NodeInterf;
  * 2019-05-06
  */
 
+// each server in the cluster appears as a node
+// this class impelment the node structure
+// also includes the impelmentation of heartbeat, election and log replication
 public class Node implements NodeInterf {
 
 	private static Logger LOG = Logger.getAnonymousLogger();
 
-	private int status;
+	private int status;  // the current status of the node
 	private boolean receiveFromLeader;
-	private String name;
+	private String name; // stored as the address of the node
 	private PeerList peerList;
-	ExecutorService electExecutor;
-	ExecutorService hbExecutor;
-	ExecutorService RPCExecutor;
-	ExecutorService stateMachineExecutor;
-	ExecutorService ReplicationExecutor;
-	ExecutorService countResultExecutor;
-	private int port;
-	private Consensus consensus;
-	private GameServer gameServer;
+	ExecutorService electExecutor; // the election executor
+	ExecutorService hbExecutor; // the heartbeat executor
+	ExecutorService RPCExecutor; // the RPC executor to call the functions in consensus class
+	ExecutorService stateMachineExecutor; // the executor to run the statemachine
+	ExecutorService ReplicationExecutor;  // the log replication executor
+	ExecutorService countResultExecutor; // the thread used to count the successful result from other pear
+	private int port; // the prot for the raft RPC
+	private Consensus consensus; // a object to init the consensus algorithm on the node 
+	private GameServer gameServer; // the game server
 
 	/**
 	 * Persistent state on all servers Updated on stable storage before responding
@@ -103,10 +106,6 @@ public class Node implements NodeInterf {
 		status = s;
 	}
 
-	public void setLeader(String l) {
-		peerList.setLeader(l);
-	}
-
 	public int getCurrentTerm() {
 		return currentTerm;
 	}
@@ -136,12 +135,14 @@ public class Node implements NodeInterf {
 	}
 
 	public boolean isLeader() {
-		if (status == Status.LEADER) {
-			return true;
-		}
-		return false;
+		return (status == Status.LEADER);
 	}
 	
+	public int getLastApplied() {
+		return lastApplied;
+	}
+	
+	// the peerList operator
 	public int getPeerAmount() {
 		return peerList.peerAmount();
 	}
@@ -158,12 +159,12 @@ public class Node implements NodeInterf {
 		return peerList.getLeader();
 	}
 	
-	public int getLastApplied() {
-		return lastApplied;
-	}
-	
 	public void setPeerList(PeerList peerList) {
 		this.peerList = peerList;
+	}
+	
+	public void setLeader(String l) {
+		peerList.setLeader(l);
 	}
 
 	/* log opeator */
@@ -191,8 +192,8 @@ public class Node implements NodeInterf {
 		log.append(entry);
 	}
 
-	// init the node
-	public void init() throws RemoteException {
+	// start the services on the node
+	public void launch() throws RemoteException {
 		boolean running = true;
 		electExecutor = Executors.newFixedThreadPool(1);
 		hbExecutor = Executors.newFixedThreadPool(1);
@@ -226,15 +227,15 @@ public class Node implements NodeInterf {
 
 		// join the peerList
 		ArrayList<InetSocketAddress> peers = peerList.allPeers(name);
-	
+		
 		RPCExecutor.submit(new Runnable() {
-
+			InetSocketAddress peer = null;
 			@Override
 			public void run() {
 				// TODO Auto-generated method stub
 				try {
 					String response = "";
-					InetSocketAddress peer = peers.get(0);
+					peer = peers.get(0);
 					String[] addr = null;
 					// if the peer is not the leader, retry adding self to the leader
 					while (!response.equals("done")) {
@@ -249,7 +250,7 @@ public class Node implements NodeInterf {
 
 				} catch (RemoteException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					peerList.removePeer(peer.getHostName()+":"+peer.getPort());
 				} catch (NotBoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -258,13 +259,14 @@ public class Node implements NodeInterf {
 
 		});
 		
+		// execute the election and heartbeat
 		while (running) {
 			electExecutor.submit(new Elect());
 			hbExecutor.submit(new HeartBeat());
 		}
 	}
 
-	// election operation
+	// implement election module as descirbed on the report
 	class Elect implements Runnable {
 
 		@SuppressWarnings("unchecked")
@@ -278,7 +280,7 @@ public class Node implements NodeInterf {
 			receiveFromLeader = false;
 
 			// waiting for messages from the leader
-			long electionTimeOut = (long) (Math.random() * 2000 + 1000);
+			long electionTimeOut = (long) (Math.random() * 1500 + 150);
 
 			try {
 				Thread.sleep(electionTimeOut);
@@ -288,7 +290,6 @@ public class Node implements NodeInterf {
 			}
 
 			if (receiveFromLeader) {
-				LOG.info(name + ": receiving message from leader!");
 				return;
 			}
 
@@ -301,15 +302,14 @@ public class Node implements NodeInterf {
 
 			currentTerm += 1;
 			votedFor = name;
-			electionTimeOut = (long) (Math.random() * 2000 + 1000);
+			electionTimeOut = (long) (Math.random() * 1500 + 150);
 
 			ArrayList<InetSocketAddress> peers = peerList.allPeers(name);
-			ArrayList<Future> futureList = new ArrayList<Future>();
+			ArrayList<Future> futureList = new ArrayList<Future>(); // store the results received from other peers
 
 			RequestVotePar.Builder builder = new RequestVotePar.Builder();
 
-			// send RPC to others
-			// future list is needed
+			// send RPC to others peers
 			for (InetSocketAddress peer : peers) {
 				futureList.add(RPCExecutor.submit(new Callable() {
 
@@ -319,14 +319,22 @@ public class Node implements NodeInterf {
 						int lastLT = lastLogTerm();
 						int lastLI = lastLogIndex();
 
-						RequestVotePar param = builder.term(currentTerm).candidateId(name).lastLogIndex(lastLI)
-								.lastLogTerm(lastLT).build();
+						RequestVotePar param = builder.term(currentTerm)
+													  .candidateId(name)
+													  .lastLogIndex(lastLI)
+													  .lastLogTerm(lastLT).build();
 
-						Registry registry = LocateRegistry.getRegistry(peer.getHostName(), peer.getPort());
+						RequestVoteRes response = null;
+						
+						try {
+							Registry registry = LocateRegistry.getRegistry(peer.getHostName(), peer.getPort());
 
-						ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
+							ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
 
-						RequestVoteRes response = consensus1.requestVote(param);
+							response = consensus1.requestVote(param);
+						} catch (RemoteException e) {
+							peerList.removePeer(peer.getHostName() + ":" + peer.getPort());
+						}
 						LOG.info(name + " Elect response: " + response.getTerm() + "  " + response.getGranted());
 						return response;
 					}
@@ -344,7 +352,7 @@ public class Node implements NodeInterf {
 					public Object call() throws Exception {
 						// TODO Auto-generated method stub
 						try {
-							RequestVoteRes response = (RequestVoteRes) future.get(3, TimeUnit.SECONDS);
+							RequestVoteRes response = (RequestVoteRes) future.get(2, TimeUnit.SECONDS);
 							if (response == null) {
 								return -1;
 							}
@@ -374,7 +382,7 @@ public class Node implements NodeInterf {
 			}
 
 			try {
-				latch.await(3, TimeUnit.SECONDS);
+				latch.await(2, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -410,7 +418,7 @@ public class Node implements NodeInterf {
 		}
 	}
 
-	// heartbeat operation
+	// impelement heatbeat as descirbed on the report
 	class HeartBeat implements Runnable {
 
 		@Override
@@ -452,12 +460,10 @@ public class Node implements NodeInterf {
 
 						} catch (RemoteException e) {
 							// TODO Auto-generated catch block
-							e.printStackTrace();
+							peerList.removePeer(peer.getHostName()+":"+peer.getPort());
 						} catch (NotBoundException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-						} catch (Exception e) {
-							peerList.removePeer(peer.getHostName()+":"+peer.getPort());
 						}
 					}
 
@@ -503,7 +509,7 @@ public class Node implements NodeInterf {
 		}
 		
 		/*  If command received from client: append entry to local log, 
-		 *  respond after entry applied to state machine (¡ì5.3)
+		 *  respond after entry applied to state machine
 		 */
 		boolean result = false;
 		log.append(new Entry(currentTerm,command));
@@ -547,8 +553,8 @@ public class Node implements NodeInterf {
 			
 			/* If last log index ¡Ý nextIndex for a follower: 
 			 * send AppendEntries RPC with log entries starting at nextIndex 
-			 * If successful: update nextIndex and matchIndex for follower (¡ì5.3) 
-			 * If AppendEntries fails because of log inconsistency: decrement nextIndex and retry (¡ì5.3) */
+			 * If successful: update nextIndex and matchIndex for follower
+			 * If AppendEntries fails because of log inconsistency: decrement nextIndex and retry*/
 			for (InetSocketAddress peer : peers) {
 				futureList.add(RPCExecutor.submit(new Callable() {
 					@Override
@@ -579,17 +585,28 @@ public class Node implements NodeInterf {
 								logToReplicated.add(log.getEntry(entryIndex));
 							}
 							
-							AppendEntryPar param = builder.term(currentTerm).leaderId(name).preLogIndex(preLogIndex)
-									.preLogTerm(logToReplicated.get(0).getEntryTerm())
-									.entries(logToReplicated.toArray(new Entry[0])).leaderCommit(commitIndex).peerList(peerList).build();
+							AppendEntryPar param = builder.term(currentTerm)
+														  .leaderId(name)
+														  .preLogIndex(preLogIndex)
+														  .preLogTerm(logToReplicated.get(0)
+														  .getEntryTerm())
+														  .entries(logToReplicated.toArray(new Entry[0]))
+														  .leaderCommit(commitIndex)
+														  .peerList(peerList).build();
 							
 							LOG.info(name+" :replicate log on "+peer.getPort());
 							
+							AppendEntryRes response = null;
+							
+							try {
 							Registry registry = LocateRegistry.getRegistry(peer.getHostName(), peer.getPort());
 
 							ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
 							
-							AppendEntryRes response = consensus1.appendEntries(param);
+							response = consensus1.appendEntries(param);}
+							catch (RemoteException e) {
+								peerList.removePeer(peer.getHostName()+":"+peer.getPort());
+							}
 							
 							if (response == null) {
 								LOG.info(name + " AppendLog Response: None");
@@ -667,11 +684,13 @@ public class Node implements NodeInterf {
 			/* If there exists an N such that N > commitIndex, 
 			 * a majority of matchIndex[i] ¡Ý N, 
 			 * and log[N].term == currentTerm: 
-			 * set commitIndex = N (¡ì5.3, ¡ì5.4).
+			 * set commitIndex = N
 			 */
 			int majority = 0;
 			for(InetSocketAddress peer : peers) { 
-				majority += matchIndex.get(peer);
+				if(matchIndex.get(peer)!= null) {
+					majority += matchIndex.get(peer);
+				}
 			}
 			if(matchIndex.size()>0) {
 				majority /= matchIndex.size();
