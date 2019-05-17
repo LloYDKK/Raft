@@ -49,6 +49,11 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 			return new RequestVoteRes(currentTerm,false);
 		}
 		
+		// reply false if the node is the leader
+		if(node.isLeader()) {
+			return new RequestVoteRes(currentTerm,false);
+		}
+		
 		/** If votedFor is null or candidateId, and candidate¡¯s log is at
 	      * least as up-to-date as receiver¡¯s log, grant vote (¡ì5.2, ¡ì5.4)
 	      */ 
@@ -79,7 +84,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		PeerList peerList = param.getPeerList();
 		
 		// renew the peerlist
-		if(peerList.peerAmount() > node.getPeerList().peerAmount()) {
+		if(peerList.peerAmount() > node.getPeerAmount()) {
 			node.setPeerList(peerList);
 		}
 		
@@ -156,9 +161,9 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 	@Override
 	public String addPeer(String address) throws RemoteException {
 		// TODO Auto-generated method stub
-		if(node.isLeader() && node.getPeerList().getPeer(address)==null) {
+		if(node.isLeader() && node.getPeer(address)==null) {
 			String[] addr = address.split(":");
-			node.getPeerList().addPeer(address, new InetSocketAddress(addr[0],Integer.parseInt(addr[1])));
+			node.addPeer(address, new InetSocketAddress(addr[0],Integer.parseInt(addr[1])));
 			return "done";
 		}
 		return node.getLeader();

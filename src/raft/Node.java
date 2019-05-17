@@ -142,10 +142,18 @@ public class Node implements NodeInterf {
 		return false;
 	}
 	
-	public PeerList getPeerList() {
-		return peerList;
+	public int getPeerAmount() {
+		return peerList.peerAmount();
+	}
+	
+	public InetSocketAddress getPeer(String name) {
+		return peerList.getPeer(name);
 	}
 
+	public void addPeer(String name, InetSocketAddress addr) {
+		peerList.addPeer(name, addr);
+	}
+	
 	public String getLeader() {
 		return peerList.getLeader();
 	}
@@ -270,7 +278,7 @@ public class Node implements NodeInterf {
 			receiveFromLeader = false;
 
 			// waiting for messages from the leader
-			long electionTimeOut = (long) (Math.random() * 1500 + 150);
+			long electionTimeOut = (long) (Math.random() * 2000 + 1000);
 
 			try {
 				Thread.sleep(electionTimeOut);
@@ -293,7 +301,7 @@ public class Node implements NodeInterf {
 
 			currentTerm += 1;
 			votedFor = name;
-			electionTimeOut = (long) (Math.random() * 1500 + 150);
+			electionTimeOut = (long) (Math.random() * 2000 + 1000);
 
 			ArrayList<InetSocketAddress> peers = peerList.allPeers(name);
 			ArrayList<Future> futureList = new ArrayList<Future>();
@@ -474,7 +482,6 @@ public class Node implements NodeInterf {
 		Future f1 = stateMachineExecutor.submit(new StateMachine(command));
 		try {
 			response = f1.get().toString();
-			System.out.println(response);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
