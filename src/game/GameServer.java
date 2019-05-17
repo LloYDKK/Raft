@@ -44,20 +44,14 @@ public class GameServer {
 
 		public ServerThread(Socket c) {
 			client = c;
-			try {
-				outPut = new PrintStream(client.getOutputStream());
-				br = new BufferedReader(new InputStreamReader(client.getInputStream()));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 			start();
 
 		}
 
 		public void run() {
-			while (true) {
 				try {
+					outPut = new PrintStream(client.getOutputStream());
+					br = new BufferedReader(new InputStreamReader(client.getInputStream()));
 					String request = br.readLine();
 					String gameResult = node.handleRequest(request);
 					outPut.println(gameResult);
@@ -68,5 +62,4 @@ public class GameServer {
 		}
 	}
 
-}
 

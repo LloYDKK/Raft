@@ -118,7 +118,6 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		if(node.logEntryTerm(prevLogIndex+1) != -1
 				&& node.logEntryTerm(prevLogIndex+1) != param.getEntry()[0].getEntryTerm()) {
 			node.logDeleteFrom(prevLogIndex+1);
-			
 		}
 		
 		// Append any new entries not already in the log
