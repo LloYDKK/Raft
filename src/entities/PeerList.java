@@ -47,4 +47,8 @@ public class PeerList implements Serializable{
 	public String getLeader() {
 		return leaderID;
 	}
+	
+	public void removePeer(String name) {
+		peerList.remove(name);
+	}
 }

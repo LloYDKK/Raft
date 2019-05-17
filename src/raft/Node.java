@@ -54,7 +54,6 @@ public class Node implements NodeInterf {
 	ExecutorService ReplicationExecutor;
 	ExecutorService countResultExecutor;
 	private int port;
-	private int gamePort;
 	private Consensus consensus;
 	private GameServer gameServer;
 
@@ -77,7 +76,6 @@ public class Node implements NodeInterf {
 	public Node(int port, PeerList peerList, int gamePort) {
 		this.port = port;
 		this.peerList = peerList;
-		this.gamePort = gamePort;
 		commitIndex = 0;
 		lastApplied = 0;
 		status = Status.FOLLOWER;
@@ -229,7 +227,7 @@ public class Node implements NodeInterf {
 				try {
 					String response = "";
 					InetSocketAddress peer = peers.get(0);
-					String [] addr = null;
+					String[] addr = null;
 					// if the peer is not the leader, retry adding self to the leader
 					while (!response.equals("done")) {
 						Registry registry = LocateRegistry.getRegistry(peer.getHostName(), peer.getPort());
@@ -450,6 +448,8 @@ public class Node implements NodeInterf {
 						} catch (NotBoundException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
+						} catch (Exception e) {
+							peerList.removePeer(peer.getHostName()+":"+peer.getPort());
 						}
 					}
 
@@ -474,6 +474,7 @@ public class Node implements NodeInterf {
 		Future f1 = stateMachineExecutor.submit(new StateMachine(command));
 		try {
 			response = f1.get().toString();
+			System.out.println(response);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -665,7 +666,10 @@ public class Node implements NodeInterf {
 			for(InetSocketAddress peer : peers) { 
 				majority += matchIndex.get(peer);
 			}
-			majority /= matchIndex.size();
+			if(matchIndex.size()>0) {
+				majority /= matchIndex.size();
+			}
+			
 			
 			for(int N = commitIndex;N<=majority;N++) {
 				if(log.getEntryTerm(N) == currentTerm) {
