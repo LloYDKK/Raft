@@ -197,7 +197,7 @@ public class Node implements NodeInterf {
 		boolean running = true;
 		electExecutor = Executors.newFixedThreadPool(1);
 		hbExecutor = Executors.newFixedThreadPool(1);
-		RPCExecutor = Executors.newFixedThreadPool(peerList.peerAmount());
+		RPCExecutor = Executors.newFixedThreadPool(3);
 		ReplicationExecutor = Executors.newFixedThreadPool(1);
 		stateMachineExecutor = Executors.newFixedThreadPool(1);
 		countResultExecutor = Executors.newFixedThreadPool(1);
@@ -335,7 +335,7 @@ public class Node implements NodeInterf {
 						} catch (RemoteException e) {
 							peerList.removePeer(peer.getHostName() + ":" + peer.getPort());
 						}
-						LOG.info(name + " Elect response: " + response.getTerm() + "  " + response.getGranted());
+						LOG.info(name + " Elect response from "+ peer.getPort() +": " + response.getTerm() + "  " + response.getGranted());
 						return response;
 					}
 				}));
@@ -470,7 +470,7 @@ public class Node implements NodeInterf {
 				});
 			}
 
-			long heartBeatTime = 30;
+			long heartBeatTime = 100;
 
 			try {
 				Thread.sleep(heartBeatTime);
@@ -500,6 +500,7 @@ public class Node implements NodeInterf {
 
 	// handle the request from the client
 	public String handleRequest(String command) {
+		LOG.info(name + " receive request from client: "+ command);
 		if (status != Status.LEADER) {
 			LOG.info(name + ": I am not the leader, redirect to the leader");
 			if (peerList.getLeader().equals("")) {
@@ -595,18 +596,12 @@ public class Node implements NodeInterf {
 														  .peerList(peerList).build();
 							
 							LOG.info(name+" :replicate log on "+peer.getPort());
-							
-							AppendEntryRes response = null;
-							
-							try {
+
 							Registry registry = LocateRegistry.getRegistry(peer.getHostName(), peer.getPort());
 
 							ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
 							
-							response = consensus1.appendEntries(param);}
-							catch (RemoteException e) {
-								peerList.removePeer(peer.getHostName()+":"+peer.getPort());
-							}
+							AppendEntryRes response = consensus1.appendEntries(param);
 							
 							if (response == null) {
 								LOG.info(name + " AppendLog Response: None");

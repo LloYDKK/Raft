@@ -51,6 +51,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		
 		// reply false if the node is the leader
 		if(node.isLeader()) {
+			LOG.info(node.getName()+": Respond Election: Abort Election!");
 			return new RequestVoteRes(currentTerm,false);
 		}
 		
@@ -93,11 +94,15 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 			return new AppendEntryRes(currentTerm,false);
 		}
 		
+		// add new peer
+		if(peerList.peerAmount() > node.getPeerAmount()) {
+			node.setPeerList(peerList);
+		}
+		
 		// if term > currentTerm, set the follower status 
 		if(leaderTerm>=currentTerm) {
 			node.setStatus(Status.FOLLOWER);
 			node.setCurrentTerm(leaderTerm);
-			node.setPeerList(peerList);
 		}
 		
 		// receive heartbeat
@@ -126,6 +131,8 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 			node.addEntry(e);
 			}
 		
+		LOG.info(node.getName()+": Now I will append the log!");
+		
 		if(leaderCommit > node.getCommitIndex()) {
 			int i = (int) Math.min(leaderCommit, node.lastLogIndex());
 			node.setCommitIndex(i);
@@ -142,6 +149,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		if(node.isLeader() && node.getPeer(address)==null) {
 			String[] addr = address.split(":");
 			node.addPeer(address, new InetSocketAddress(addr[0],Integer.parseInt(addr[1])));
+			LOG.info(node.getName()+": Now I will add a new peer!");
 			return "done";
 		}
 		return node.getLeader();
