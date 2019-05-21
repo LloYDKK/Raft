@@ -3,6 +3,7 @@ package raft;
 import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import entities.AppendEntryPar;
@@ -27,10 +28,14 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		node = n;
 	}
 	
+	public final ReentrantLock voteLock = new ReentrantLock();
+    public final ReentrantLock appendLock = new ReentrantLock();
+	
 	@Override
 	public RequestVoteRes requestVote(RequestVotePar param) throws RemoteException {
 		// TODO Auto-generated method stub
-		
+		try {
+			
 		// unpacking the arguements
 		int candidTerm = param.getTerm();
 		String candidID = param.getCandidate();
@@ -43,6 +48,13 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		int nodeLogTerm = node.lastLogTerm();
 		node.receiveFromLeader();
 		
+		LOG.info(node.getName()+": Receive Election Message from "+candidID);
+		
+		if(!voteLock.tryLock()) {
+			LOG.info("Lock");
+			return new RequestVoteRes(currentTerm,false);
+		}
+		
 		// Reply false if term < currentTerm
 		if (candidTerm < currentTerm) {
 			LOG.info(node.getName()+": Respond Election: term < currentTerm!");
@@ -54,13 +66,14 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 			LOG.info(node.getName()+": Respond Election: Abort Election!");
 			return new RequestVoteRes(currentTerm,false);
 		}
-		
+
 		/** If votedFor is null or candidateId, and candidate¡¯s log is at
 	      * least as up-to-date as receiver¡¯s log, grant vote
 	      */ 
 		if ((node.getVotedFor().equals("") || node.getVotedFor().equals(candidID))
 			 && nodeLogIndex <= candidLogIndex
 		     && nodeLogTerm <= candidLogTerm){
+
 			LOG.info(node.getName()+": vote for "+ candidID);
 			node.setStatus(Status.FOLLOWER);
 			node.setLeader(candidID);
@@ -69,13 +82,16 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 			return new RequestVoteRes(candidTerm,true);
 		}
 		
-		return new RequestVoteRes(currentTerm,false);
+		return new RequestVoteRes(currentTerm,false);}
+		finally {
+			voteLock.unlock();
+		}
 	}
 
 	@Override
 	public AppendEntryRes appendEntries(AppendEntryPar param) throws RemoteException {
 		// TODO Auto-generated method stub
-		
+		try {
 		// unpacking the arguments
 		int leaderTerm = param.getTerm();
 		int prevLogIndex = param.getPreLogIndex();
@@ -87,6 +103,10 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		// status for the current node
 		int currentTerm = node.getCurrentTerm();
 		node.receiveFromLeader();
+		
+		if(!appendLock.tryLock()) {
+			return new AppendEntryRes(currentTerm,false);
+		}
 		
 		// Reply false if term < currentTerm
 		if(leaderTerm<currentTerm) {
@@ -138,7 +158,10 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 			node.setCommitIndex(i);
 		}
 		
-		return new AppendEntryRes(currentTerm,true);
+		return new AppendEntryRes(currentTerm,true);}
+		finally {
+			appendLock.unlock();
+		}
 	}
 
 	// a new peer will run this method on one of the existing peer

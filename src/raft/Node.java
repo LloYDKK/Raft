@@ -79,6 +79,7 @@ public class Node implements NodeInterf {
 	public Node(int port, PeerList peerList, int gamePort) {
 		this.port = port;
 		this.peerList = peerList;
+		votedFor = "";
 		commitIndex = 0;
 		lastApplied = 0;
 		status = Status.FOLLOWER;
@@ -278,9 +279,9 @@ public class Node implements NodeInterf {
 			}
 
 			receiveFromLeader = false;
-
+			LOG.info(name + ": the peer amount now is "+peerList.peerAmount());
 			// waiting for messages from the leader
-			long electionTimeOut = (long) (Math.random() * 1500 + 150);
+			long electionTimeOut = (long) (Math.random() * 15000 + 5000);
 
 			try {
 				Thread.sleep(electionTimeOut);
@@ -302,7 +303,7 @@ public class Node implements NodeInterf {
 
 			currentTerm += 1;
 			votedFor = name;
-			electionTimeOut = (long) (Math.random() * 1500 + 150);
+			electionTimeOut = (long) (Math.random() * 15000 + 5000);
 
 			ArrayList<InetSocketAddress> peers = peerList.allPeers(name);
 			ArrayList<Future> futureList = new ArrayList<Future>(); // store the results received from other peers
@@ -324,17 +325,13 @@ public class Node implements NodeInterf {
 													  .lastLogIndex(lastLI)
 													  .lastLogTerm(lastLT).build();
 
-						RequestVoteRes response = null;
 						
-						try {
-							Registry registry = LocateRegistry.getRegistry(peer.getHostName(), peer.getPort());
+						Registry registry = LocateRegistry.getRegistry(peer.getHostName(), peer.getPort());
 
-							ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
+						ConsensusInterf consensus1 = (ConsensusInterf) registry.lookup("consensus");
 
-							response = consensus1.requestVote(param);
-						} catch (RemoteException e) {
-							peerList.removePeer(peer.getHostName() + ":" + peer.getPort());
-						}
+						RequestVoteRes response = consensus1.requestVote(param);
+
 						LOG.info(name + " Elect response from "+ peer.getPort() +": " + response.getTerm() + "  " + response.getGranted());
 						return response;
 					}
@@ -352,7 +349,7 @@ public class Node implements NodeInterf {
 					public Object call() throws Exception {
 						// TODO Auto-generated method stub
 						try {
-							RequestVoteRes response = (RequestVoteRes) future.get(2, TimeUnit.SECONDS);
+							RequestVoteRes response = (RequestVoteRes) future.get(5, TimeUnit.SECONDS);
 							if (response == null) {
 								return -1;
 							}
@@ -382,7 +379,7 @@ public class Node implements NodeInterf {
 			}
 
 			try {
-				latch.await(2, TimeUnit.SECONDS);
+				latch.await(5, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
