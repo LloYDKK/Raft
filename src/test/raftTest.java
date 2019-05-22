@@ -23,18 +23,18 @@ public class raftTest {
 		//PeerList peerList3 = new PeerList();
 		
 		// node1 only knows the address of itself
-		peerList.addPeer("192.168.1.2:8081", new InetSocketAddress("192.168.1.2",8081));
-		peerList.addPeer("192.168.1.2:8083", new InetSocketAddress("192.168.1.2",8083));
+		peerList.addPeer("10.12.16.244:8081", new InetSocketAddress("10.12.16.244",8081));
+		peerList.addPeer("10.12.16.244:8083", new InetSocketAddress("10.12.16.244",8083));
 		//peerList.addPeer("192.168.137.236:8084", new InetSocketAddress("192.168.137.236",8084));
 		
-		peerList2.addPeer("192.168.1.2:8081", new InetSocketAddress("192.168.1.2",8081));
-		peerList2.addPeer("192.168.1.2:8083", new InetSocketAddress("192.168.1.2",8083));
+		peerList2.addPeer("10.12.16.244:8081", new InetSocketAddress("10.12.16.244",8081));
+		peerList2.addPeer("10.12.16.244:8083", new InetSocketAddress("10.12.16.244",8083));
 		
 		// node2 and node3 know the addresses of itself and of node1
 		// after launching, peerLists on three node will be unified
 		// node2 & node3 will appear as new members
-		//peerList3.addPeer("192.168.1.2:8081", new InetSocketAddress("192.168.1.2",8081));
-		//peerList3.addPeer("192.168.1.2:8083", new InetSocketAddress("192.168.1.2",8083));
+		//peerList3.addPeer("10.12.16.244:8081", new InetSocketAddress("10.12.16.244",8081));
+		//peerList3.addPeer("10.12.16.244:8083", new InetSocketAddress("10.12.16.244",8083));
 		
 		Node n1 = new Node(8081,peerList,8881);
 		Node n2 = new Node(8083,peerList,8883);

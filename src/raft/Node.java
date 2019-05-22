@@ -198,7 +198,7 @@ public class Node implements NodeInterf {
 		boolean running = true;
 		electExecutor = Executors.newFixedThreadPool(1);
 		hbExecutor = Executors.newFixedThreadPool(1);
-		RPCExecutor = Executors.newFixedThreadPool(3);
+		RPCExecutor = Executors.newFixedThreadPool(4);
 		ReplicationExecutor = Executors.newFixedThreadPool(1);
 		stateMachineExecutor = Executors.newFixedThreadPool(1);
 		countResultExecutor = Executors.newFixedThreadPool(1);
@@ -262,6 +262,12 @@ public class Node implements NodeInterf {
 		
 		// execute the election and heartbeat
 		while (running) {
+		    try {
+				Thread.sleep(1);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			electExecutor.submit(new Elect());
 			hbExecutor.submit(new HeartBeat());
 		}
@@ -424,8 +430,6 @@ public class Node implements NodeInterf {
 			if (status != Status.LEADER)
 				return; // if self status is not leader, dont need to send heartbeat
 
-			LOG.info(name + ": Sending heartbeat to all the peers");
-
 			ArrayList<InetSocketAddress> peers = peerList.allPeers(name);
 
 			for (InetSocketAddress peer : peers) {
@@ -435,7 +439,8 @@ public class Node implements NodeInterf {
 					public void run() {
 						// TODO Auto-generated method stub
 						try {
-
+							LOG.info(name + ": Sending heartbeat to " + peer.getPort());
+							
 							AppendEntryPar.Builder builder = new AppendEntryPar.Builder();
 
 							AppendEntryPar heartbeat = builder.leaderId(name).entries(new Entry[0]).term(currentTerm)
@@ -467,7 +472,7 @@ public class Node implements NodeInterf {
 				});
 			}
 
-			long heartBeatTime = 100;
+			long heartBeatTime = 500;
 
 			try {
 				Thread.sleep(heartBeatTime);
