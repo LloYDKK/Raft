@@ -19,30 +19,20 @@ public class raftTest {
 	public static void main(String[] args) {
 		Locale.setDefault(new Locale("en", "EN"));
 		PeerList peerList = new PeerList();
-		PeerList peerList2 = new PeerList();
-		//PeerList peerList3 = new PeerList();
-		
-		// node1 only knows the address of itself
+        
 		peerList.addPeer("10.12.16.244:8081", new InetSocketAddress("10.12.16.244",8081));
+		peerList.addPeer("10.12.16.244:8082", new InetSocketAddress("10.12.16.244",8082));
 		peerList.addPeer("10.12.16.244:8083", new InetSocketAddress("10.12.16.244",8083));
-		//peerList.addPeer("192.168.137.236:8084", new InetSocketAddress("192.168.137.236",8084));
-		
-		peerList2.addPeer("10.12.16.244:8081", new InetSocketAddress("10.12.16.244",8081));
-		peerList2.addPeer("10.12.16.244:8083", new InetSocketAddress("10.12.16.244",8083));
-		
-		// node2 and node3 know the addresses of itself and of node1
-		// after launching, peerLists on three node will be unified
-		// node2 & node3 will appear as new members
-		//peerList3.addPeer("10.12.16.244:8081", new InetSocketAddress("10.12.16.244",8081));
-		//peerList3.addPeer("10.12.16.244:8083", new InetSocketAddress("10.12.16.244",8083));
+        peerList.addPeer("10.12.16.244:8084", new InetSocketAddress("10.12.16.244",8084));
 		
 		Node n1 = new Node(8081,peerList,8881);
-		Node n2 = new Node(8083,peerList,8883);
+		Node n2 = new Node(8082,peerList,8882);
+		Node n3 = new Node(8083,peerList,8883);
+        Node n4 = new Node(8084,peerList,8884);
 		
 		Thread t1 = new Thread() {
 			public void run() {
 				try {
-					
 					n1.launch();
 				} catch (RemoteException e) {
 					// TODO Auto-generated catch block
@@ -61,29 +51,32 @@ public class raftTest {
 				}
 			}
 		};
+
+		Thread t3 = new Thread() {
+			public void run() {
+				try {
+					n3.launch();
+				} catch (RemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		};
 		
-		
-        // t4 is used to test log replication between three nodes by perform as a client to register
-//		Thread t4 = new Thread() {
-//			public void run() {
-//				try {
-//					int username = 100;
-//					while(username<200) {
-//					Thread.sleep(8000);
-//					System.out.println(n1.handleRequest("register|"+username+"|222|333"));
-//					System.out.println(n2.handleRequest("register|"+username+"|222|333"));
-//					//System.out.println(n3.handleRequest("register|"+username+"|222|333"));
-//					username += 1;
-//					}
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
-//		};
-		
+        Thread t4 = new Thread() {
+			public void run() {
+				try {
+					n4.launch();
+				} catch (RemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		};
+        
 		t1.start();
 		t2.start();
-		//t4.start();
+		t3.start();
+        t4.start();
 	}
 }

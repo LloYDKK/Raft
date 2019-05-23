@@ -115,7 +115,7 @@ public class Consensus extends UnicastRemoteObject implements ConsensusInterf {
 		}
 		
 		// add new peer
-		if(peerList.peerAmount() > node.getPeerAmount()) {
+		if(peerList.peerAmount() != node.getPeerAmount()) {
 			node.setPeerList(peerList);
 		}
 		

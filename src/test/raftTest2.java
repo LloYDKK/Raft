@@ -19,27 +19,10 @@ public class raftTest2 {
 	public static void main(String[] args) {
 		Locale.setDefault(new Locale("en", "EN"));
 		PeerList peerList = new PeerList();
-		PeerList peerList2 = new PeerList();
-		//PeerList peerList3 = new PeerList();
-		
-		// node1 only knows the address of itself
-		peerList.addPeer("192.168.137.1:8081", new InetSocketAddress("192.168.137.1",8081));
-		//peerList.addPeer("10.13.21.249:8088", new InetSocketAddress("10.13.21.249",8088));
-		//peerList.addPeer("10.12.120.63:8082", new InetSocketAddress("10.12.120.63",8082));
-		//peerList.addPeer("10.13.17.189:8082", new InetSocketAddress("10.13.17.189",8082));
-		//peerList.addPeer("10.12.230.17:8083", new InetSocketAddress("10.12.230.17",8083));
-		peerList2.addPeer("192.168.137.1:8083", new InetSocketAddress("192.168.137.1",8083));
-		peerList2.addPeer("192.168.137.1:8081", new InetSocketAddress("192.168.137.1",8081));
-		
-		// node2 and node3 know the addresses of itself and of node1
-		// after launching, peerLists on three node will be unified
-		// node2 & node3 will appear as new members
-		//peerList3.addPeer("10.12.16.244:8081", new InetSocketAddress("10.12.16.244",8081));
-		//peerList3.addPeer("10.12.16.244:8083", new InetSocketAddress("10.12.16.244",8083));
+
+		peerList.addPeer("10.12.16.244:8081", new InetSocketAddress("10.12.16.244",8081));
 		
 		Node n1 = new Node(8081,peerList,8881);
-		Node n2 = new Node(8083,peerList2,8883);
-		//Node n3 = new Node(8083,peerList,8883);
 		
 		Thread t1 = new Thread() {
 			public void run() {
@@ -52,21 +35,17 @@ public class raftTest2 {
 			}
 		};
 		
-		Thread t2 = new Thread() {
-			public void run() {
-				try {
-					Thread.sleep(100000);
-					n2.launch();
-				} catch (RemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		};
-
+//		Thread t2 = new Thread() {
+//			public void run() {
+//				try {
+//					n2.launch();
+//				} catch (RemoteException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//		};
+//
 //		Thread t3 = new Thread() {
 //			public void run() {
 //				try {
@@ -77,20 +56,12 @@ public class raftTest2 {
 //				}
 //			}
 //		};
-		
-        // t4 is used to test log replication between three nodes by perform as a client to register
+//		
 //		Thread t4 = new Thread() {
 //			public void run() {
 //				try {
-//					int username = 100;
-//					while(username<200) {
-//					Thread.sleep(8000);
-//					System.out.println(n1.handleRequest("register|"+username+"|222|333"));
-//					System.out.println(n2.handleRequest("register|"+username+"|222|333"));
-//					//System.out.println(n3.handleRequest("register|"+username+"|222|333"));
-//					username += 1;
-//					}
-//				} catch (InterruptedException e) {
+//					n4.launch();
+//				} catch (RemoteException e) {
 //					// TODO Auto-generated catch block
 //					e.printStackTrace();
 //				}
@@ -98,8 +69,8 @@ public class raftTest2 {
 //		};
 		
 		t1.start();
-		t2.start();
-		//t3.start();
-		//t4.start();
+//		t2.start();
+//		t3.start();
+//		t4.start();
 	}
 }

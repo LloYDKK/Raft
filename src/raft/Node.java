@@ -154,6 +154,8 @@ public class Node implements NodeInterf {
 
 	public void addPeer(String name, InetSocketAddress addr) {
 		peerList.addPeer(name, addr);
+		nextIndex.put(addr, log.getLastLogIndex() + 1);
+		matchIndex.put(addr, 0);
 	}
 	
 	public String getLeader() {
@@ -287,7 +289,7 @@ public class Node implements NodeInterf {
 			receiveFromLeader = false;
 			LOG.info(name + ": the peer amount now is "+peerList.peerAmount());
 			// waiting for messages from the leader
-			long electionTimeOut = (long) (Math.random() * 15000 + 5000);
+			long electionTimeOut = (long) (Math.random() * 5000 + 3000);
 
 			try {
 				Thread.sleep(electionTimeOut);
@@ -309,7 +311,7 @@ public class Node implements NodeInterf {
 
 			currentTerm += 1;
 			votedFor = name;
-			electionTimeOut = (long) (Math.random() * 15000 + 5000);
+			electionTimeOut = (long) (Math.random() * 5000 + 3000);
 
 			ArrayList<InetSocketAddress> peers = peerList.allPeers(name);
 			ArrayList<Future> futureList = new ArrayList<Future>(); // store the results received from other peers
@@ -355,7 +357,7 @@ public class Node implements NodeInterf {
 					public Object call() throws Exception {
 						// TODO Auto-generated method stub
 						try {
-							RequestVoteRes response = (RequestVoteRes) future.get(5, TimeUnit.SECONDS);
+							RequestVoteRes response = (RequestVoteRes) future.get(10, TimeUnit.SECONDS);
 							if (response == null) {
 								return -1;
 							}
@@ -385,7 +387,7 @@ public class Node implements NodeInterf {
 			}
 
 			try {
-				latch.await(5, TimeUnit.SECONDS);
+				latch.await(10, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
